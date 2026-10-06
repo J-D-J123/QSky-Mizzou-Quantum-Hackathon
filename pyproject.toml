@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qsky-classical"
+version = "0.1.0"
+description = "Classical audio drone-detection baselines with grouped splits and SNR evaluation"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26,<3",
+    "scipy>=1.11,<2",
+    "librosa>=0.10.2,<0.12",
+    "soundfile>=0.12,<0.14",
+    "scikit-learn>=1.4,<1.8",
+    "joblib>=1.3,<2",
+]
+
+[project.optional-dependencies]
+cnn = ["torch>=2.2,<3"]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+qsky-classical = "qsky_classical.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["qsky_classical*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
