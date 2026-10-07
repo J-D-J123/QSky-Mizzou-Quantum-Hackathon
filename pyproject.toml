@@ -22,9 +22,14 @@ test = ["pytest>=8,<10"]
 
 [project.scripts]
 qsky-classical = "qsky_classical.cli:main"
+qsky-dhanya = "qsky_classical.dhanya:main"
+qsky-matched = "qsky_classical.matched:main"
 
 [tool.setuptools.packages.find]
 include = ["qsky_classical*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "fits: fits an estimator or runs training; deselect with -m \"not fits\" on a machine that must not train",
+]

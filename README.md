@@ -1,9 +1,12 @@
 # QSky classical audio baselines
 
 Choose an individual model or compare all four on the same recordings and noise
-mixtures. This implements the requested **1-second / 16 kHz** pipeline with test
-SNRs **clean, 20, 10, 0, and -10 dB**. These settings supersede the older experiment
-settings in `QubitSky_DATASETS.md` for this implementation.
+mixtures. The default is the originally requested **1-second / 16 kHz** pipeline with
+test SNRs **clean, 20, 10, 0, and -10 dB**. The window duration and SNR list are
+configurable: `--window-seconds 3 --snr-preset shared` gives the 3-second,
+clean/20/10/5/0 dB protocol of the quantum experiments. Comparing against those
+experiments, including the matched selected-feature mode for A–C and the importer for
+Dhanya's assets, is described in [BENCHMARK_PROTOCOL.md](BENCHMARK_PROTOCOL.md).
 
 | Model | Input | Classifier |
 | --- | --- | --- |
@@ -14,9 +17,12 @@ settings in `QubitSky_DATASETS.md` for this implementation.
 
 B is a configurable small-model reference: use `--small-width` to adjust its
 capacity. Its trainable parameter count is `(k + 2) * width + 1` for binary output.
-An exact quantum parameter budget has not been supplied, so no exact match is
-claimed. C and D are stronger reference architectures, not guaranteed upper bounds
-on accuracy. Parameter counts and SVM support-vector counts are recorded.
+That is 25 parameters at `k = 4` with the default width. B is a low-capacity reference,
+**not** a parameter match for the quantum model: Dhanya's trainable quantum kernel has
+one trainable parameter per qubit (4 at 4 qubits), fewer than any MLP on 4 inputs can
+have. C and D are stronger reference architectures, not guaranteed upper bounds
+on accuracy. D sees the full spectrogram and is a richer-input classical reference,
+not a feature-matched comparison. Parameter counts and SVM support-vector counts are recorded.
 
 ## Install
 
@@ -29,13 +35,33 @@ pip install -e ".[test]"
 ```
 
 A–C work with the base installation. For D or `--models all`, also install PyTorch.
-The implementation runs the CNN on CPU:
+For a laptop with no CUDA access, a CPU-only installation is sufficient:
 
 ```bash
 pip install "torch>=2.2,<3" --index-url https://download.pytorch.org/whl/cpu
 ```
 
 Alternatively, `pip install -e ".[cnn,test]"` uses the default PyTorch distribution.
+For NVIDIA GPUs such as L40S, A100, H100, or newer supported hardware, install a
+CUDA-enabled PyTorch build appropriate for the machine's driver using the
+[official installation selector](https://pytorch.org/get-started/locally/).
+A CPU-only PyTorch build cannot use CUDA even when an NVIDIA GPU is present.
+
+Model D defaults to `--device auto`: it checks the CUDA GPUs visible to the process,
+verifies that a small CUDA operation works, and uses the first usable GPU. It falls
+back to CPU if none is usable. This respects `CUDA_VISIBLE_DEVICES`, including GPUs
+allocated by a cluster scheduler. It uses one GPU; it does not require an A100 or
+reject other compatible NVIDIA GPUs. The non-CUDA fallback is CPU, not Apple MPS
+or a separately configured AMD backend.
+
+Use `--device cpu` to force CPU, or `--device cuda` to require a usable GPU and fail
+early if none is available. The selected device and GPU name are printed and saved
+in `config.json`, `selection.json`, and the CNN checkpoint. Availability checks do
+not reserve training memory: an out-of-memory error during training is reported;
+the run is not silently restarted on CPU. A–C and audio feature extraction use CPU.
+CNN batches move to the selected device, while saved weights use CPU tensors so
+checkpoints remain loadable on a laptop. Deterministic settings are retained, but
+results are not guaranteed to be bit-identical across CPU/GPU hardware or versions.
 
 ## Describe your recordings
 
@@ -128,22 +154,30 @@ qsky-classical --manifest data/clips.csv --noise-manifest data/noise.csv \
   --output runs/augmented
 ```
 
-`--snrs clean 20 10 0 -10` is the default. `--seed`, `--val-size`, `--test-size`,
-`--max-iter`, and `--batch-size` are also configurable. See `qsky-classical --help`.
+`--snrs clean 20 10 0 -10` is the default (`--snr-preset legacy`). `--seed`, `--val-size`, `--test-size`,
+`--max-iter`, `--batch-size`, and `--device` are also configurable. See `qsky-classical --help`.
+`--train-recordings 24 50 70 --seeds 1 2 3` runs a training-size and multi-seed sweep in
+which every model of a seed and size trains on the same balanced recordings; `--seed`
+still fixes the split and the noise assignment, so the test set never changes.
+`--dry-run` validates everything, loads the audio, and writes the plan without fitting.
 `python -m qsky_classical` is an equivalent entry point. Use a new output directory
 for each run; existing results are never overwritten by a new run.
 
 ## Processing and comparison protocol
 
 1. Validate the manifest and split source-recording groups before reading windows.
-2. Convert to mono at 16 kHz, cut non-overlapping 1-second windows, zero-pad the
-   final partial window, and peak-normalize each window independently.
+2. Convert to mono at 16 kHz, cut non-overlapping windows of `--window-seconds`
+   (1 second by default), zero-pad the final partial window, and peak-normalize each
+   window independently. Every window keeps its source recording ID.
 3. Mix an independently reserved background window at each requested SNR using
    RMS power. The same seeded noise assignment is used for each model and each
    SNR; only the noise gain changes with SNR. Mixing is in floating point, with
-   no post-mix clipping or normalization. Silent noise windows are excluded;
-   silent signal windows produce a clear error for noisy runs because SNR is
-   undefined (they remain usable in clean-only runs).
+   no post-mix clipping or normalization. Silent noise windows are excluded.
+   SNR is undefined for a silent signal window, so by default
+   (`--silent-policy exclude`) silent windows are removed from every split before
+   any model runs and listed in `exclusions.csv`. Each model and each SNR condition,
+   clean included, is therefore scored on the same examples. `--silent-policy error`
+   restores the earlier behavior: a noisy run stops at the first silent signal window.
 4. Compute 13 MFCCs and their population mean/std over frames: 26 features. Both
    feature branches use 64 mel bands, a 512-sample FFT, and a 160-sample hop.
 5. Fit StandardScaler, PCA (`k = 2, 4, 6`), and MinMaxScaler **only on training
@@ -157,7 +191,10 @@ for each run; existing results are never overwritten by a new run.
    selects its best epoch on the same validation metric. Ties retain the first
    candidate/earliest epoch. Validation is never merged into training.
 7. Evaluate every requested model/dimension on the identical test conditions.
-   Clip predictions average window scores. SVM uses its decision score and a
+   Clip predictions average window scores; `--levels recording` adds the same
+   average per source recording. `--aggregation feature-mean` is a different
+   procedure for A–C: window features are averaged per recording first and each
+   recording is classified once. SVM uses its decision score and a
    zero threshold; MLP/CNN use positive-class probability and a 0.5 threshold.
    Every requested PCA width is reported; test scores do not select a winner.
 
@@ -179,9 +216,19 @@ Each output directory contains:
 - `results.csv`: model, PCA width, SNR, evaluation level, accuracy, balanced
   accuracy, precision, recall, F1, ROC-AUC, confusion counts, timing, model size,
   validation score, and seed. Precision/recall/F1 refer to drone label 1.
-- `predictions.csv`: individual window and clip scores/predictions.
+- `predictions.csv`: individual window, clip, and recording scores/predictions with recording IDs.
 - `splits.csv`, `noise_splits.csv`: exact recording assignments (noise file when used).
-- `config.json`: arguments, audio settings, selection rule, and key package versions.
+- `split_ids.json`, `subsets.json`: recording IDs per split and per seed/training size.
+- `exclusions.csv`: every window removed before evaluation, with the reason.
+- `noise_assignment.csv`: the noise window mixed into each training/test window.
+- `plan.json`: the model fits of the run (also written by `--dry-run`).
+- `config.json`: arguments, audio settings, feature order, preprocessing, aggregation
+  rules, thresholds, seeds, selection rule, and package versions.
+- `artifacts/*.joblib.meta.json`: checksum and package versions of each saved artifact.
+  `qsky_classical.artifacts.load_bundle` refuses a scikit-learn pickle from another
+  minor release instead of loading it silently.
+- `artifacts/model_*.portable.json`: the same preprocessing and model as plain numbers,
+  usable from any environment without unpickling.
 - `selection.json`: candidate validation scores and selected hyperparameters/epoch.
 - `artifacts/model_A_k*.joblib`, `model_B_k*.joblib`, `model_C_k*.joblib`: fitted
   classifier, fitted preprocessing pipeline, and decision threshold.
@@ -206,3 +253,13 @@ pytest -q
 The generated tone/noise dataset is **only a functional smoke test**. Its accuracy
 does not measure real drone detection. Install PyTorch for the complete test suite;
 without it the tabular comparison is tested and the dedicated CNN test is skipped.
+
+To check device selection, fallback, inference, and checkpoint portability **without
+training**, run `pytest -q tests/test_devices.py`. The real CUDA inference check is
+skipped on CPU-only machines; the CUDA selection/failure paths are also tested
+with simulated device availability. The full pipeline suite above does train models.
+
+On a machine that must not train, run `pytest -q -m "not fits"`. It skips every test
+that fits an estimator and still checks windowing, splits, silent-window handling,
+aggregation, subsets, the importer, artifact loading, and the orchestration (with
+fixed stand-in estimators).

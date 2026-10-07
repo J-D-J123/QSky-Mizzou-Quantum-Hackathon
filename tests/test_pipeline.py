@@ -60,6 +60,7 @@ def test_mono_resampling_padding_and_features(tmp_path):
     assert features(windows, mel=True).shape == (2, 64, 101)
 
 
+@pytest.mark.fits
 def test_training_statistics_and_angle_bounds():
     rng = np.random.default_rng(4)
     train = rng.normal(size=(30, 26))
@@ -123,6 +124,7 @@ def test_missing_noise_fails_before_output(manifests, tmp_path):
     assert not output.exists()
 
 
+@pytest.mark.fits
 def test_complete_comparison_and_saved_preprocessor(manifests, tmp_path):
     # Three PCA widths require at least six train windows; duplicate the training
     # clip duration rather than introduce windows from validation/test.
@@ -136,7 +138,7 @@ def test_complete_comparison_and_saved_preprocessor(manifests, tmp_path):
     args = parser().parse_args([
         "--manifest", str(manifests[0]), "--noise-manifest", str(manifests[1]),
         "--models", *selected, "--pca", "2", "4", "6", "--train-snrs", "10",
-        "--epochs", "1", "--max-iter", "50", "--output", str(output),
+        "--epochs", "1", "--max-iter", "50", "--device", "cpu", "--output", str(output),
     ])
     rows = run(args)
     # Each model/PCA pair has five SNRs and both window and clip metrics.
@@ -158,13 +160,14 @@ def test_complete_comparison_and_saved_preprocessor(manifests, tmp_path):
         run(args)
 
 
+@pytest.mark.fits
 def test_cnn_saved_predictions_match(manifests, tmp_path):
     torch = pytest.importorskip("torch")
     from qsky_classical.cnn import CNNModel, LogMelCNN
 
     output = tmp_path / "cnn"
     args = parser().parse_args(["--manifest", str(manifests[0]), "--models", "D", "--snrs", "clean",
-                               "--epochs", "1", "--output", str(output)])
+                               "--epochs", "1", "--device", "cpu", "--output", str(output)])
     run(args)
     saved = torch.load(output / "artifacts/model_D.pt", weights_only=True)
     network = LogMelCNN()
