@@ -60,7 +60,8 @@ def _inject_style(background_image: Path) -> None:
 :root {{
     --ink: #102342;
     --muted: #526982;
-    --surface: #f4f8ff;
+    --surface: #fff8cf;
+    --lemon: #fff2a8;
     --navy: #071b3d;
     --blue: #2877d4;
     --cyan: #38c9e8;
@@ -76,7 +77,7 @@ def _inject_style(background_image: Path) -> None:
 html, body, [class*="stApp"] {{
   font-family: 'Space Grotesk', sans-serif;
   color: var(--ink);
-    background: linear-gradient(150deg, #f5fbff 0%, #f1f4ff 58%, #f7f4ff 100%);
+    background: linear-gradient(150deg, #fffbe1 0%, #fff4b8 48%, #f5f2ff 100%);
 }}
 
 section[data-testid="stMain"] .block-container {{
@@ -288,8 +289,8 @@ section[data-testid="stSidebar"], button[data-testid="stExpandSidebarButton"] {{
 }}
 
 .qk-card {{
-    background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(242,248,255,0.84));
-    border: 1px solid rgba(133, 183, 222, 0.46);
+    background: linear-gradient(145deg, rgba(255, 250, 210, 0.96), rgba(255, 241, 164, 0.88));
+    border: 1px solid rgba(211, 173, 56, 0.48);
   border-radius: 16px;
   padding: 1rem 1rem 0.9rem 1rem;
   box-shadow: 0 10px 28px rgba(16, 34, 43, 0.08);
@@ -367,8 +368,8 @@ section[data-testid="stSidebar"], button[data-testid="stExpandSidebarButton"] {{
 
 .stButton button, .stDownloadButton button {{
   border-radius: 10px;
-  border: 1px solid #d6dde0;
-  background: #ffffff;
+    border: 1px solid #dfc65a;
+    background: #fff6bf;
 }}
 
 .stButton button:hover, .stDownloadButton button:hover {{
@@ -486,24 +487,24 @@ def demo_audio_samples() -> dict[str, Path]:
         split_table = pd.read_csv(split_path, dtype={"recording_id": str, "split": str})
         test_ids = set(split_table.loc[split_table["split"].eq("test"), "recording_id"])
     examples: dict[str, Path] = {}
-    for label, folder in (
-        ("Drone Sample", PROJECT_ROOT / "data/processed/test/svanstrom/drone"),
-        ("Environmental / No-Drone Sample", PROJECT_ROOT / "data/processed/test/svanstrom/background"),
-    ):
-        for audio_path in sorted(folder.glob("*__clean__seg0000.flac")):
-            recording_id = audio_path.name.split("__", maxsplit=1)[0]
-            if recording_id in test_ids:
-                examples[label] = audio_path
-                break
-    if len(examples) < 2:
-        manifest_path = ASSETS_DIR / "demo_audio" / "demo_samples.json"
-        manifest = _safe_read_json(manifest_path)
-        for label, sample in manifest.get("samples", {}).items():
-            if label in examples or sample.get("split") != "test":
-                continue
-            candidate = ASSETS_DIR / "demo_audio" / str(sample.get("file", ""))
-            if candidate.is_file():
-                examples[label] = candidate
+    manifest_path = ASSETS_DIR / "demo_audio" / "demo_samples.json"
+    manifest = _safe_read_json(manifest_path)
+    for label, sample in manifest.get("samples", {}).items():
+        if sample.get("split") != "test":
+            continue
+        recording_id = str(sample.get("recording_id", ""))
+        source_class = str(sample.get("source_class", ""))
+        if not recording_id or not source_class or (test_ids and recording_id not in test_ids):
+            continue
+        source_folder = PROJECT_ROOT / "data/processed/test/svanstrom" / source_class
+        source_matches = sorted(source_folder.glob(f"{recording_id}__*__clean__seg0000.flac"))
+        if source_matches:
+            examples[label] = source_matches[0]
+            continue
+        packaged_name = Path(str(sample.get("file", ""))).name
+        packaged_path = (ASSETS_DIR / "demo_audio" / packaged_name).resolve()
+        if packaged_name and packaged_path.is_relative_to((ASSETS_DIR / "demo_audio").resolve()) and packaged_path.is_file():
+            examples[label] = packaged_path
     return examples
 
 
@@ -614,17 +615,9 @@ def _hero() -> None:
     )
 
 
-def _navigate_to_research() -> None:
-    st.session_state["main_navigation"] = "RESEARCH"
-
-
 def page_detect(data: dict[str, Any]) -> None:
     _hero()
-    hero_action, hero_research = st.columns([1, 1], gap="small")
-    with hero_action:
-        st.markdown('<a class="qk-hero-cta" href="#audio-upload">ANALYZE AUDIO</a>', unsafe_allow_html=True)
-    with hero_research:
-        st.button("VIEW RESEARCH", on_click=_navigate_to_research, key="hero-view-research")
+    st.markdown('<a class="qk-hero-cta" href="#audio-upload">UPLOAD AUDIO</a>', unsafe_allow_html=True)
 
     model_options = {
         "Classical SVM": _build_bundle(data["best_svm"], data["selected_features"], "SVM"),
@@ -691,6 +684,7 @@ def page_detect(data: dict[str, Any]) -> None:
                         st.session_state["analysis_result"] = result
                 except Exception as exc:
                     st.error(f"Audio analysis failed: {exc}")
+            st.caption("Runs the saved local SVM or selected model on this recording and returns its predicted label.")
 
             result = st.session_state.get("analysis_result", {})
             if result.get("source_sha256") == source_hash and result.get("model_name") == bundle.label:
@@ -704,8 +698,8 @@ def page_detect(data: dict[str, Any]) -> None:
                 if result.get("demo_example"):
                     st.caption("Demo example; this output is not a new evaluation result.")
                 with st.expander("View analysis details"):
-                    waveform, spectrum, feature_table = analysis_detail_data(result)
                     st.markdown("**Waveform**")
+                    waveform, spectrum, feature_table = analysis_detail_data(result)
                     st.line_chart(waveform, height=180)
                     st.markdown("**Spectrogram**")
                     fig = px.imshow(
