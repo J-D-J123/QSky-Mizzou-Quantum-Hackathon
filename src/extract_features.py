@@ -46,6 +46,26 @@ def standardize_clip(file_path: Path) -> np.ndarray:
     return audio.astype(np.float32, copy=False)
 
 
+def split_windows(audio: np.ndarray) -> list[np.ndarray]:
+    """Cut audio into non-overlapping, peak-normalized windows without zero-padding.
+
+    A trailing remainder shorter than one window is dropped. A recording shorter
+    than one window is kept whole (unpadded) so it still contributes one example.
+    Training (prepare_dataset.py) and the DETECT page both use this function.
+    """
+    if not audio.size:
+        return []
+    starts = range(0, audio.size - CLIP_SAMPLE_COUNT + 1, CLIP_SAMPLE_COUNT)
+    windows = [audio[start : start + CLIP_SAMPLE_COUNT] for start in starts] or [audio]
+    normalized = []
+    for window in windows:
+        peak = float(np.max(np.abs(window)))
+        if peak > 0.0:
+            window = window / peak
+        normalized.append(window.astype(np.float32, copy=False))
+    return normalized
+
+
 def extract_features(audio: np.ndarray) -> dict[str, float]:
     """Calculate interpretable clip-level means for ranking and later selection."""
     mfcc = librosa.feature.mfcc(y=audio, sr=SAMPLE_RATE, n_mfcc=3)

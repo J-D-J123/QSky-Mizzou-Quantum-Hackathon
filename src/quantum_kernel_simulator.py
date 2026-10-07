@@ -25,6 +25,7 @@ from qiskit_machine_learning.kernels import (
 )
 from qiskit_machine_learning.kernels.algorithms import QuantumKernelTrainer
 from qiskit_machine_learning.optimizers import SPSA
+from qiskit_machine_learning.utils import algorithm_globals
 from qiskit_machine_learning.utils.loss_functions import SVCLoss
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.neural_network import MLPClassifier
@@ -435,6 +436,7 @@ def _fit_and_evaluate(
     tests_by_snr: dict[str, pd.DataFrame],
     seed: int,
     optimizer_iterations: int = 0,
+    trainable_restarts: int = 10,
     use_cache: bool = True,
 ) -> tuple[list[dict[str, Any]], Any, dict[str, Any]]:
     features = [
@@ -494,20 +496,56 @@ def _fit_and_evaluate(
             kernel.assign_training_parameters(fitted_parameters)
             parameter_suffix = f"theta_{_matrix_hash(fitted_parameters.reshape(1,-1))[:10]}"
         else:
-            kernel = CachedTrainableFidelityQuantumKernel(
-                feature_map=feature_map,
-                training_parameters=trainable_parameters,
-                cache_entries={},
-            )
-            trainer = QuantumKernelTrainer(
-                quantum_kernel=kernel,
-                loss=SVCLoss(C=0.1, class_weight="balanced"),
-                optimizer=SPSA(maxiter=optimizer_iterations),
-                initial_point=np.full(len(trainable_parameters), 0.5, dtype=float),
-            )
+            # SPSA perturbations are random, so a single unseeded run is not
+            # reproducible (test F1 ranged 0.43-0.71 across seeds). Run seeded
+            # restarts and keep the one with the best validation score; the test
+            # split never influences the choice.
+            validation_y = validation["binary_label"].to_numpy(dtype=int)
+            restart_records: list[dict[str, Any]] = []
+            best: tuple[tuple[float, float, float], Any, Any, int] | None = None
             start = time.perf_counter()
-            optimized = trainer.fit(train_x, train_y)
+            for restart in range(trainable_restarts):
+                optimizer_seed = seed * 1000 + restart
+                algorithm_globals.random_seed = optimizer_seed
+                candidate_kernel = CachedTrainableFidelityQuantumKernel(
+                    feature_map=feature_map,
+                    training_parameters=trainable_parameters,
+                    cache_entries={},
+                )
+                trainer = QuantumKernelTrainer(
+                    quantum_kernel=candidate_kernel,
+                    loss=SVCLoss(C=0.1, class_weight="balanced"),
+                    optimizer=SPSA(maxiter=optimizer_iterations),
+                    initial_point=np.full(len(trainable_parameters), 0.5, dtype=float),
+                )
+                candidate = trainer.fit(train_x, train_y)
+                selector = SVC(kernel="precomputed", C=0.1, class_weight="balanced")
+                selector.fit(candidate_kernel.evaluate(train_x), train_y)
+                validation_matrix = candidate_kernel.evaluate(validation_x, train_x)
+                candidate_metrics = calculate_metrics(
+                    validation_y,
+                    selector.predict(validation_matrix),
+                    selector.decision_function(validation_matrix),
+                )
+                restart_records.append(
+                    {
+                        "optimizer_seed": optimizer_seed,
+                        "parameters": np.asarray(candidate.optimal_point, dtype=float).tolist(),
+                        "optimal_loss": float(candidate.optimal_value),
+                        "validation_f1": candidate_metrics["f1"],
+                        "validation_balanced_accuracy": candidate_metrics["balanced_accuracy"],
+                        "validation_drone_recall": candidate_metrics["drone_recall"],
+                    }
+                )
+                key = validation_key(candidate_metrics)
+                if best is None or key > best[0]:
+                    best = (key, candidate_kernel, candidate, optimizer_seed)
+                print(
+                    f"  trainable restart {restart + 1}/{trainable_restarts}: seed={optimizer_seed}, "
+                    f"validation F1={candidate_metrics['f1']:.3f}"
+                )
             kernel_training_seconds = time.perf_counter() - start
+            _, kernel, optimized, selected_seed = best
             fitted_parameters = np.asarray(optimized.optimal_point, dtype=float)
             trainable_result = {
                 "optimal_parameters": fitted_parameters.tolist(),
@@ -516,6 +554,9 @@ def _fit_and_evaluate(
                 "training_recording_ids_sha256": training_ids_hash,
                 "feature_map": feature_map_name,
                 "iterations_max": optimizer_iterations,
+                "selection": "best validation F1, then balanced accuracy, then drone recall",
+                "selected_optimizer_seed": selected_seed,
+                "restarts": restart_records,
             }
             parameter_cache_path.write_text(
                 json.dumps(trainable_result, indent=2) + "\n", encoding="utf-8"
@@ -737,6 +778,7 @@ def _load_stage_assets(feature_count: int, train_size: int, seed: int) -> dict[s
         "tests_by_snr": tests_by_snr,
         "subset_ids": subset_ids,
         "scaler_sha256": scaler_sha256,
+        "training_size": train_size,
     }
 
 
@@ -792,7 +834,10 @@ def _fit_classical_comparators(data: dict[str, Any], seed: int) -> list[dict[str
     output = []
     models = {"rbf_svm": (svm, svm_training_seconds), "small_mlp": (mlp, mlp_training_seconds)}
     for name, (model, fit_seconds) in models.items():
-        model_path = MODEL_DIR / f"{name}_q4_n{len(train)}_clean_aggregated_seed{seed}.joblib"
+        model_path = (
+            MODEL_DIR
+            / f"{name}_q{len(features)}_n{len(train)}_clean_aggregated_seed{seed}.joblib"
+        )
         MODEL_DIR.mkdir(parents=True, exist_ok=True)
         joblib.dump(model, model_path)
         val_metrics, _ = score_frame(model, validation, features)
@@ -804,9 +849,11 @@ def _fit_classical_comparators(data: dict[str, Any], seed: int) -> list[dict[str
                     "model": name,
                     "experiment": "matched_sample_clean_model_robustness",
                     "simulator": "classical_cpu",
-                    "feature_count": 4,
+                    # Label with the real configuration. Hard-coding 4 / 24 here let
+                    # later grid configurations overwrite the matched 4/24 rows.
+                    "feature_count": len(features),
                     "qubit_count": 0,
-                    "training_size_requested": 24,
+                    "training_size_requested": data["training_size"],
                     "training_recordings": len(train),
                     "training_snr": "clean",
                     "evaluation_snr": snr,
@@ -888,9 +935,12 @@ def run_stage5(
     seed: int = RANDOM_SEED,
     initial_only: bool = False,
     trainable_iterations: int = 3,
+    trainable_restarts: int = 10,
 ) -> dict[str, Any]:
     if trainable_iterations < 1 or trainable_iterations > 5:
         raise ValueError("Trainable optimizer iterations must be between 1 and 5")
+    if trainable_restarts < 1:
+        raise ValueError("At least one trainable restart is required")
     if RESULTS_PATH.exists():
         previous = pd.read_csv(RESULTS_PATH)
         if not previous.empty:
@@ -961,6 +1011,7 @@ def run_stage5(
         tests_by_snr={"clean": tests_by_snr["clean"]},
         seed=seed,
         optimizer_iterations=trainable_iterations,
+        trainable_restarts=trainable_restarts,
     )
     rows.extend(trainable_rows)
     _append_results(rows)
@@ -1062,12 +1113,20 @@ def build_parser() -> argparse.ArgumentParser:
         default=3,
         help="SPSA max iterations for the initial trainable kernel (1-5).",
     )
+    parser.add_argument(
+        "--trainable-restarts",
+        type=int,
+        default=10,
+        help="Seeded SPSA restarts; the restart with the best validation F1 is kept.",
+    )
     return parser
 
 
 def main() -> None:
     args = build_parser().parse_args()
-    result = run_stage5(args.seed, args.initial_only, args.trainable_iterations)
+    result = run_stage5(
+        args.seed, args.initial_only, args.trainable_iterations, args.trainable_restarts
+    )
     print(f"Stage 5 results saved to {RESULTS_PATH}")
     print(f"Kernel matrices cached under {KERNEL_CACHE_DIR}")
     print(result)

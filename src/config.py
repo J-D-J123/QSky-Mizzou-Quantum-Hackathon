@@ -41,7 +41,10 @@ URBANSOUND8K_AUDIO_DIR = URBANSOUND8K_ROOT / "audio"
 METADATA_FILENAME = "metadata.csv"
 FEATURES_FILENAME = "features.csv"
 SAMPLE_RATE = 16_000
-CLIP_DURATION_SECONDS = 3.0
+# One-second windows match the native ITU-ARIS clip length, so no source needs
+# zero-padding. Padding 1 s clips to 3 s made "is this ITU-ARIS?" recoverable from
+# the features and let models learn the dataset instead of the drone.
+CLIP_DURATION_SECONDS = 1.0
 CLIP_SAMPLE_COUNT = int(SAMPLE_RATE * CLIP_DURATION_SECONDS)
 RANDOM_SEED = 42
 SNR_LEVELS_DB = (20, 10, 5, 0)

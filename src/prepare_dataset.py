@@ -19,7 +19,6 @@ from sklearn.preprocessing import StandardScaler
 
 from build_master_metadata import build_master_metadata, build_parser as master_parser
 from config import (
-    CLIP_SAMPLE_COUNT,
     FEATURES_DIR,
     MASTER_METADATA,
     MODELS_DIR,
@@ -30,7 +29,7 @@ from config import (
     SAMPLE_RATE,
     SNR_LEVELS_DB,
 )
-from extract_features import FEATURE_COLUMNS, extract_features
+from extract_features import FEATURE_COLUMNS, extract_features, split_windows
 from select_features import rank_features
 from create_noise_sets import measured_snr_db, mix_at_snr
 
@@ -219,16 +218,7 @@ def segment_audio(file_path: str) -> list[np.ndarray]:
     audio = load_audio_source(file_path)
     if not audio.size:
         raise ValueError(f"Audio file is empty: {file_path}")
-    clips = []
-    for start in range(0, audio.size, CLIP_SAMPLE_COUNT):
-        clip = audio[start : start + CLIP_SAMPLE_COUNT]
-        if clip.size < CLIP_SAMPLE_COUNT:
-            clip = np.pad(clip, (0, CLIP_SAMPLE_COUNT - clip.size))
-        peak = float(np.max(np.abs(clip)))
-        if peak > 0:
-            clip = clip / peak
-        clips.append(clip.astype(np.float32, copy=False))
-    return clips
+    return split_windows(audio)
 
 
 def path_for_output(path: Path) -> str:

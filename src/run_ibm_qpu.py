@@ -1067,6 +1067,10 @@ def _validated_resume_state(
         return initial_state, 0
 
     previous = json.loads(JOBS_PATH.read_text(encoding="utf-8"))
+    if previous.get("status") == "not_submitted" and not previous.get("jobs"):
+        # Placeholder written by a preflight-only run (_write_preflight_artifacts);
+        # nothing was ever submitted, so there is no prefix to resume.
+        return initial_state, 0
     expected_metadata = {
         "backend": PREFERRED_BACKEND,
         "physical_layout": list(selected_layout),

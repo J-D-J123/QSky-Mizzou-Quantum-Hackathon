@@ -4,6 +4,20 @@
 
 QubitSky is a CPU-first research project for the Qiskit Fall Fest 2026 Challenge 2. It studies whether a quantum-kernel classifier behaves differently from classical models when drone recordings must be distinguished from acoustically similar confusers with limited labeled data and environmental noise.
 
+## Changes on the `srikar` branch
+
+This branch builds on `dhanya` and fixes three problems found while reproducing the pipeline from the raw datasets. The recording-level split is unchanged (train/validation/test = 301/80/98 recordings; the matched quantum subset is 24 balanced recordings). Stage numbers quoted further down this README come from the earlier 3-second pipeline and are superseded by a rerun.
+
+1. **One-second windows, no zero-padding.** ITU-ARIS clips are 1 s long and were padded to 3 s, while ITU-ARIS supplies most drone recordings. The padding made the dataset identifiable from the features: the rule "clip is from ITU-ARIS" alone scored test F1 0.690, and the selected MLP flagged every ITU-ARIS background clip as a drone while missing every Svanström drone. Every source is now cut into 1 s windows (`CLIP_DURATION_SECONDS = 1.0`, `extract_features.split_windows`), and short tails are dropped instead of padded. Feature selection now picks `spectral_bandwidth_mean`, `mfcc_3_mean`, `spectral_flatness_mean` and `rms_energy_mean`.
+2. **Reproducible trainable kernel.** SPSA was unseeded, so the trainable QSVC's test F1 ranged 0.43 to 0.71 across reruns. Stage 5 now runs seeded restarts (`--trainable-restarts`, default 10) and keeps the one with the best validation F1; the test split never influences the choice.
+3. **Correct classical comparators.** `_fit_classical_comparators` labelled every SVM/MLP row as 4 features and 24 recordings, so later grid configurations overwrote the matched rows used by Stage 6 and the RESEARCH page.
+
+The DETECT page now classifies every 1 s window of an upload and takes a majority vote. `run_ibm_qpu.py` also no longer rejects the placeholder job ledger written by a preflight-only run.
+
+Results after the fixes (clean test, recording level, same samples for every model; 4 features, 24 recordings): RBF SVM F1 0.492, trainable QSVC 0.444, fixed QSVC 0.308, MLP 0.000. The classical SVM is the strongest model in every grid configuration. With the selected 6-feature models, DETECT recognises 83% of held-out Svanström drones (previously 50% for the SVM and 0% for the MLP).
+
+To regenerate everything: place the four datasets in `data/raw/` (see Data below), then run `build_master_metadata.py`, `prepare_dataset.py`, `train_svm.py`, `train_mlp.py`, `quantum_kernel_simulator.py` and `quantum_noise_experiments.py`. Add `--store-noisy-audio` to `prepare_dataset.py` if a model needs the noisy audio itself rather than its features.
+
 ## Research Question
 
 Using only 4–6 audio features, how does a quantum-kernel classifier compare with a classical RBF SVM and a small MLP as the training set shrinks and signal-to-noise ratio decreases? What qubit count and simulated error rate, if any, are needed for the quantum model to match the classical baselines?

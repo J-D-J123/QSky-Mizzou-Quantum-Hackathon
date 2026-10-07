@@ -23,10 +23,12 @@ SRC_DIR = PROJECT_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from extract_features import FEATURE_COLUMNS, extract_features, standardize_clip
+from config import SAMPLE_RATE
+from extract_features import FEATURE_COLUMNS, extract_features, split_windows
 
 
 RESULTS_DIR = PROJECT_ROOT / "results"
+MAX_ANALYSIS_SECONDS = 120
 QUANTUM_DIR = RESULTS_DIR / "quantum"
 MODELS_DIR = PROJECT_ROOT / "models"
 ASSETS_DIR = PROJECT_ROOT / "assets"
@@ -413,13 +415,15 @@ def _load_scaler(scaler_path: str) -> Any:
     return joblib.load(scaler_path)
 
 
-def _extract_audio_bundle(audio_file, extension: str) -> tuple[np.ndarray, dict[str, float]]:
+def _extract_audio_bundle(audio_file, extension: str) -> tuple[np.ndarray, list[dict[str, float]]]:
+    """Load the upload and extract features per window, exactly as training does."""
     with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
         tmp.write(audio_file.getbuffer())
         tmp_path = Path(tmp.name)
     try:
-        clip = standardize_clip(tmp_path)
-        return clip, extract_features(clip)
+        audio, _ = librosa.load(tmp_path, sr=SAMPLE_RATE, mono=True, duration=MAX_ANALYSIS_SECONDS)
+        audio = audio.astype(np.float32, copy=False)
+        return audio, [extract_features(window) for window in split_windows(audio)]
     finally:
         try:
             os.remove(tmp_path)
@@ -438,9 +442,14 @@ def _build_bundle(config: dict[str, Any], selected_features: dict[str, Any], lab
     scaler_path = MODELS_DIR / f"scaler_{feature_count}.pkl"
     if not names:
         return None
+    resolved_model_path = Path(model_path)
+    if not resolved_model_path.is_file():
+        # Saved configs hold absolute paths from the machine that trained them;
+        # fall back to the same file inside this checkout's models/ folder.
+        resolved_model_path = MODELS_DIR / resolved_model_path.parent.name / resolved_model_path.name
     return ModelBundle(
         label=label,
-        model_path=Path(model_path),
+        model_path=resolved_model_path,
         scaler_path=scaler_path,
         feature_names=list(names),
         feature_count=feature_count,
@@ -511,21 +520,28 @@ def page_detect(data: dict[str, Any]) -> None:
     if st.button("ANALYZE AUDIO", type="primary", width="stretch"):
         try:
             with st.spinner("Analyzing recording…"):
-                clip, features = _extract_audio_bundle(uploaded, Path(uploaded.name).suffix.lower() or ".wav")
+                clip, window_features = _extract_audio_bundle(uploaded, Path(uploaded.name).suffix.lower() or ".wav")
+                if not window_features:
+                    raise ValueError("The recording contains no audio.")
                 feature_frame = pd.DataFrame(
-                    [[features[name] for name in bundle.feature_names]],
+                    [[features[name] for name in bundle.feature_names] for features in window_features],
                     columns=bundle.feature_names,
                 )
                 model = _load_model(str(bundle.model_path))
                 scaler = _load_scaler(str(bundle.scaler_path))
                 scaled_features = scaler.transform(feature_frame.to_numpy(dtype=float))
-                prediction = int(model.predict(scaled_features)[0])
+                window_predictions = model.predict(scaled_features).astype(int)
+                drone_windows = int(window_predictions.sum())
+                # Majority vote over one-second windows.
+                prediction = int(drone_windows * 2 >= len(window_predictions))
                 st.session_state["analysis_result"] = {
                     "upload_key": upload_key,
                     "model_name": bundle.label,
                     "prediction": prediction,
+                    "drone_windows": drone_windows,
+                    "window_count": len(window_predictions),
                     "clip": clip,
-                    "features": features,
+                    "features": feature_frame.mean().to_dict(),
                     "feature_names": bundle.feature_names,
                     "feature_count": bundle.feature_count,
                     "model_path": str(bundle.model_path),
@@ -539,7 +555,7 @@ def page_detect(data: dict[str, Any]) -> None:
         result_text = "DRONE DETECTED" if is_drone else "NO DRONE DETECTED"
         result_class = "drone" if is_drone else ""
         st.markdown(
-            f"<div class='qk-result {result_class}'><div class='qk-muted'>Prediction</div><div class='qk-result-title'>{result_text}</div><div class='qk-muted'>Model: {result['model_name']}</div></div>",
+            f"<div class='qk-result {result_class}'><div class='qk-muted'>Prediction</div><div class='qk-result-title'>{result_text}</div><div class='qk-muted'>Model: {result['model_name']} · {result['drone_windows']} of {result['window_count']} one-second windows sounded like a drone</div></div>",
             unsafe_allow_html=True,
         )
         with st.expander("View analysis details"):
@@ -552,7 +568,7 @@ def page_detect(data: dict[str, Any]) -> None:
             fig.update_layout(height=300, margin=dict(l=8, r=8, t=10, b=8))
             st.plotly_chart(fig, width="stretch")
             feature_table = pd.DataFrame(
-                {"Feature": result["feature_names"], "Value": [result["features"][name] for name in result["feature_names"]]}
+                {"Feature": result["feature_names"], "Mean across windows": [result["features"][name] for name in result["feature_names"]]}
             )
             st.dataframe(feature_table, width="stretch", hide_index=True)
             st.caption(f"Local {result['model_name']} · {result['feature_count']} selected features · {Path(result['model_path']).name}")
