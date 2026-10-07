@@ -20,3 +20,24 @@ results/*
 !results/.gitkeep
 models/*
 !models/.gitkeep
+!models/scaler_6.pkl
+!models/svm/
+models/svm/*
+!models/svm/svm_f6_n70_train_snr_clean.joblib
+
+# Minimal frontend runtime bundle; other generated results remain local.
+!results/best_svm_configuration.json
+!results/selected_features.json
+!results/quantum/
+results/quantum/*
+!results/quantum/final_quantum_comparison.csv
+!results/quantum/ideal_simulator_results.csv
+!results/quantum/noisy_simulator_results.csv
+!results/quantum/qpu_results.csv
+!results/quantum/qpu_jobs.json
+!results/quantum/qpu_job_cache/
+results/quantum/qpu_job_cache/*
+!results/quantum/qpu_job_cache/db2kk7c7f06c73aq0ueg.json
+!results/quantum/qpu_job_cache/db2m8rs7f06c73aq3jdg.json
+!results/quantum/qpu_job_cache/db2p9s68v0ts73c39gm0.json
+!results/quantum/qpu_job_cache/db361uu8v0ts73c3vgo0.json

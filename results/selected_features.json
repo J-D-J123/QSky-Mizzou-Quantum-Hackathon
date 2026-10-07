@@ -1,0 +1,40 @@
+{
+  "ranking_source": "/Users/dhanyaboyapally/Qsky/data/features/train_features.csv",
+  "ranking_unit": "recording_id mean across training segments",
+  "recordings_used": 301,
+  "qubit_mappings": {
+    "4": {
+      "feature_count": 4,
+      "qubits": 4,
+      "features": [
+        "mfcc_2_mean",
+        "spectral_flatness_mean",
+        "spectral_bandwidth_mean",
+        "mfcc_1_mean"
+      ]
+    },
+    "5": {
+      "feature_count": 5,
+      "qubits": 5,
+      "features": [
+        "mfcc_2_mean",
+        "spectral_flatness_mean",
+        "spectral_bandwidth_mean",
+        "mfcc_1_mean",
+        "rms_energy_mean"
+      ]
+    },
+    "6": {
+      "feature_count": 6,
+      "qubits": 6,
+      "features": [
+        "mfcc_2_mean",
+        "spectral_flatness_mean",
+        "spectral_bandwidth_mean",
+        "mfcc_1_mean",
+        "rms_energy_mean",
+        "spectral_centroid_mean"
+      ]
+    }
+  }
+}

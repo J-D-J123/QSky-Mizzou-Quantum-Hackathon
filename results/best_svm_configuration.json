@@ -1,0 +1,111 @@
+{
+  "selected_on": "internal validation only; clean training condition",
+  "best_external_model": {
+    "model": "svm",
+    "feature_count": 6,
+    "train_size_requested": 70,
+    "train_size_actual": 70,
+    "train_snr": "clean",
+    "validation_f1": 0.9223021582733812,
+    "validation_balanced_accuracy": 0.8738743675452536,
+    "validation_drone_recall": 0.924963924963925,
+    "model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f6_n70_train_snr_clean.joblib",
+    "hyperparameters": {
+      "C": 10.0,
+      "gamma": "scale"
+    }
+  },
+  "best_per_feature_and_training_size": [
+    {
+      "model": "svm",
+      "feature_count": 4,
+      "train_size_requested": 24,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.8839634941329857,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f4_n24_train_snr_clean.joblib"
+    },
+    {
+      "model": "svm",
+      "feature_count": 4,
+      "train_size_requested": 50,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.7854077253218884,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f4_n50_train_snr_clean.joblib"
+    },
+    {
+      "model": "svm",
+      "feature_count": 4,
+      "train_size_requested": 70,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.8839634941329857,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f4_n70_train_snr_clean.joblib"
+    },
+    {
+      "model": "svm",
+      "feature_count": 5,
+      "train_size_requested": 24,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.8833876221498371,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f5_n24_train_snr_clean.joblib"
+    },
+    {
+      "model": "svm",
+      "feature_count": 5,
+      "train_size_requested": 50,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.780870806566738,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f5_n50_train_snr_clean.joblib"
+    },
+    {
+      "model": "svm",
+      "feature_count": 5,
+      "train_size_requested": 70,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.875,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f5_n70_train_snr_clean.joblib"
+    },
+    {
+      "model": "svm",
+      "feature_count": 6,
+      "train_size_requested": 24,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.8839634941329857,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f6_n24_train_snr_clean.joblib"
+    },
+    {
+      "model": "svm",
+      "feature_count": 6,
+      "train_size_requested": 50,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.774885145482389,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f6_n50_train_snr_clean.joblib"
+    },
+    {
+      "model": "svm",
+      "feature_count": 6,
+      "train_size_requested": 70,
+      "selected_train_snr": "clean",
+      "selected_validation_f1": 0.9223021582733812,
+      "selected_model_path": "/Users/dhanyaboyapally/Qsky/models/svm/svm_f6_n70_train_snr_clean.joblib"
+    }
+  ],
+  "nasa_metrics_or_confidence": {
+    "accuracy": NaN,
+    "precision": NaN,
+    "recall": NaN,
+    "f1": NaN,
+    "roc_auc": NaN,
+    "balanced_accuracy": NaN,
+    "drone_recall": NaN,
+    "non_drone_recall": NaN,
+    "confusion_matrix": "",
+    "nasa_labeled_rows": 0,
+    "nasa_recordings": 62,
+    "predicted_drone_fraction": 0.11121323529411764,
+    "mean_drone_probability": 0.25164428431308083,
+    "std_drone_probability": 0.0883556652033473,
+    "drone_probability_q10": 0.14498907934719873,
+    "drone_probability_median": 0.2516505822122528,
+    "drone_probability_q90": 0.3602996587568009
+  }
+}

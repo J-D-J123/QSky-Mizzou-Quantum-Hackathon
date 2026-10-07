@@ -214,10 +214,13 @@ Launch the website frontend (DETECT, RESEARCH, ABOUT):
 streamlit run app.py
 ```
 
+The deployment bundle needs the selected local SVM and scaler, selected feature config, comparison CSVs, completed QPU result/ledger/cache files, `background.jpg`, and the two manifest-listed held-out demo FLACs. `.gitignore` allowlists only these frontend runtime assets; other generated datasets and models remain local.
+
 Behavior and guardrails:
 
 - The frontend reads only local artifacts under `results/` and `models/`.
 - No IBM Runtime submission, polling, cancellation, or QPU-control path is called from the app.
-- DETECT performs local inference only, using existing saved model/scaler artifacts.
+- DETECT performs local inference only, using existing saved model/scaler artifacts. WAV and FLAC uploads are supported; MP3 is not advertised.
+- Demo clips are held-out test examples for demonstrating the UI only; predictions are not new evaluation evidence.
 - The HOME hero image is loaded from the project-root `background.jpg`.
 - Optional ambience can be added as `assets/ambience.mp3` and is off by default.

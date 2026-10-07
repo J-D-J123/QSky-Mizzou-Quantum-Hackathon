@@ -46,7 +46,8 @@ def _inject_style(background_image: Path) -> None:
     if background_image.is_file():
         image_data = base64.b64encode(background_image.read_bytes()).decode("ascii")
         hero_background = (
-            "background-image: linear-gradient(rgba(3, 11, 20, 0.50), rgba(3, 11, 20, 0.50)), "
+            "background-image: linear-gradient(110deg, rgba(4, 18, 49, 0.76), rgba(24, 77, 150, 0.48) 48%, rgba(87, 57, 158, 0.42)), "
+            "linear-gradient(0deg, rgba(5, 21, 45, 0.30), rgba(3, 14, 35, 0.20)), "
             f"url('data:image/jpeg;base64,{image_data}');"
         )
     else:
@@ -57,18 +58,25 @@ def _inject_style(background_image: Path) -> None:
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
 
 :root {{
-  --ink: #0f2530;
-  --muted: #4e6976;
-  --surface: #f6f7f2;
-  --accent: #ff8a36;
-  --accent-alt: #00a8b5;
-  --ring: rgba(255,138,54,0.25);
+    --ink: #102342;
+    --muted: #526982;
+    --surface: #f4f8ff;
+    --navy: #071b3d;
+    --blue: #2877d4;
+    --cyan: #38c9e8;
+    --teal: #119b91;
+    --violet: #7657d6;
+    --purple: #a18af0;
+    --orange: #ffad42;
+    --accent: #ffad42;
+    --accent-alt: #14a89d;
+    --ring: rgba(63, 156, 232, 0.24);
 }}
 
 html, body, [class*="stApp"] {{
   font-family: 'Space Grotesk', sans-serif;
   color: var(--ink);
-  background: linear-gradient(180deg, #f6f7f2 0%, #f4f5ef 100%);
+    background: linear-gradient(150deg, #f5fbff 0%, #f1f4ff 58%, #f7f4ff 100%);
 }}
 
 section[data-testid="stMain"] .block-container {{
@@ -142,8 +150,8 @@ section[data-testid="stSidebar"], button[data-testid="stExpandSidebarButton"] {{
     margin-top: 0.9rem;
     padding: 0.66rem 1rem;
     border-radius: 8px;
-    background: #ff8a36;
-    color: #10232c !important;
+    background: linear-gradient(110deg, #4bd3ed, #9f8af1 76%, #ffb454);
+    color: #071b3d !important;
     font-weight: 700;
     text-decoration: none !important;
     text-shadow: none;
@@ -280,23 +288,41 @@ section[data-testid="stSidebar"], button[data-testid="stExpandSidebarButton"] {{
 }}
 
 .qk-card {{
-  background: linear-gradient(160deg, #ffffff, #f9f8f3);
-  border: 1px solid #dde7ea;
+    background: linear-gradient(145deg, rgba(255,255,255,0.92), rgba(242,248,255,0.84));
+    border: 1px solid rgba(133, 183, 222, 0.46);
   border-radius: 16px;
   padding: 1rem 1rem 0.9rem 1rem;
   box-shadow: 0 10px 28px rgba(16, 34, 43, 0.08);
 }}
 
 .qk-result {{
-    border-left: 6px solid var(--accent-alt);
-    background: #eaf7f5;
+        border: 1px solid rgba(48, 178, 185, 0.28);
+        border-left: 7px solid var(--accent-alt);
+        background: linear-gradient(110deg, rgba(211, 249, 247, 0.98), rgba(221, 241, 255, 0.94));
     padding: 1.25rem 1.4rem;
     margin: 1rem 0;
     color: #102833;
+        box-shadow: 0 12px 32px rgba(25, 88, 129, 0.10);
 }}
 
-.qk-result.drone {{ border-color: #d24b36; background: #fff0eb; }}
+.qk-result.drone {{ border-color: #ed9a38; border-left-color: #26c5e3; background: linear-gradient(110deg, rgba(204, 247, 255, 0.98), rgba(225, 226, 255, 0.96) 68%, rgba(255, 226, 186, 0.92)); }}
+.qk-result.no-drone {{ border-left-color: #119b91; background: linear-gradient(110deg, rgba(207, 249, 239, 0.98), rgba(212, 236, 255, 0.96)); }}
 .qk-result-title {{ font-size: clamp(1.8rem, 5vw, 3rem); line-height: 1.05; font-weight: 700; }}
+
+.st-key-detect-card {{
+    padding: clamp(1.1rem, 3vw, 2rem);
+    border: 1px solid rgba(139, 182, 235, 0.58);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(10, 35, 79, 0.97), rgba(29, 91, 156, 0.92) 52%, rgba(106, 78, 178, 0.91));
+    color: #f4fbff;
+    box-shadow: 0 18px 48px rgba(21, 58, 111, 0.18);
+}}
+
+.st-key-detect-card h2, .st-key-detect-card h3, .st-key-detect-card p, .st-key-detect-card label {{ color: #f4fbff !important; }}
+.st-key-detect-card [data-testid="stCaptionContainer"] {{ color: #cfdef4 !important; }}
+.st-key-detect-card [data-testid="stFileUploader"] {{ background: rgba(239, 249, 255, 0.94); border: 1px dashed #5ecfea; border-radius: 12px; padding: 0.55rem; }}
+.st-key-detect-card [data-testid="stFileUploader"] * {{ color: #153450 !important; }}
+.st-key-detect-card audio {{ width: 100%; }}
 
 .qk-stat {{
   font-size: 1.5rem;
@@ -350,6 +376,14 @@ section[data-testid="stSidebar"], button[data-testid="stExpandSidebarButton"] {{
   box-shadow: 0 0 0 0.2rem var(--ring);
 }}
 
+.stButton button[kind="primary"] {{
+    border: 0;
+    color: #071b3d;
+    font-weight: 700;
+    background: linear-gradient(105deg, #52d6ed, #8e89ed 72%, #ffb454);
+    box-shadow: 0 8px 22px rgba(55, 148, 206, 0.25);
+}}
+
 @keyframes fade-slide {{
   from {{ opacity: 0; transform: translateY(8px); }}
   to {{ opacity: 1; transform: translateY(0); }}
@@ -386,7 +420,7 @@ def _safe_read_json(path: Path) -> dict[str, Any]:
         return json.load(handle)
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, ttl=10)
 def load_results() -> dict[str, Any]:
     return {
         "final": _safe_read_csv(QUANTUM_DIR / "final_quantum_comparison.csv"),
@@ -413,20 +447,6 @@ def _load_scaler(scaler_path: str) -> Any:
     return joblib.load(scaler_path)
 
 
-def _extract_audio_bundle(audio_file, extension: str) -> tuple[np.ndarray, dict[str, float]]:
-    with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
-        tmp.write(audio_file.getbuffer())
-        tmp_path = Path(tmp.name)
-    try:
-        clip = standardize_clip(tmp_path)
-        return clip, extract_features(clip)
-    finally:
-        try:
-            os.remove(tmp_path)
-        except OSError:
-            pass
-
-
 def _build_bundle(config: dict[str, Any], selected_features: dict[str, Any], label: str) -> ModelBundle | None:
     best = config.get("best_external_model", {})
     model_path = best.get("model_path")
@@ -438,14 +458,141 @@ def _build_bundle(config: dict[str, Any], selected_features: dict[str, Any], lab
     scaler_path = MODELS_DIR / f"scaler_{feature_count}.pkl"
     if not names:
         return None
+    model_candidate = Path(model_path)
+    if not model_candidate.is_file():
+        candidates = [
+            MODELS_DIR / model_candidate.name,
+            MODELS_DIR / "svm" / model_candidate.name,
+            MODELS_DIR / "mlp" / model_candidate.name,
+        ]
+        model_candidate = next((candidate for candidate in candidates if candidate.is_file()), model_candidate)
+    if not model_candidate.is_file() or not scaler_path.is_file():
+        return None
     return ModelBundle(
         label=label,
-        model_path=Path(model_path),
+        model_path=model_candidate,
         scaler_path=scaler_path,
         feature_names=list(names),
         feature_count=feature_count,
         validation_f1=float(best.get("validation_f1", 0.0) or 0.0),
     )
+
+
+def demo_audio_samples() -> dict[str, Path]:
+    """Find one clean held-out drone and background example for UI demonstration only."""
+    split_path = RESULTS_DIR / "recording_split.csv"
+    test_ids: set[str] = set()
+    if split_path.is_file():
+        split_table = pd.read_csv(split_path, dtype={"recording_id": str, "split": str})
+        test_ids = set(split_table.loc[split_table["split"].eq("test"), "recording_id"])
+    examples: dict[str, Path] = {}
+    for label, folder in (
+        ("Drone Sample", PROJECT_ROOT / "data/processed/test/svanstrom/drone"),
+        ("Environmental / No-Drone Sample", PROJECT_ROOT / "data/processed/test/svanstrom/background"),
+    ):
+        for audio_path in sorted(folder.glob("*__clean__seg0000.flac")):
+            recording_id = audio_path.name.split("__", maxsplit=1)[0]
+            if recording_id in test_ids:
+                examples[label] = audio_path
+                break
+    if len(examples) < 2:
+        manifest_path = ASSETS_DIR / "demo_audio" / "demo_samples.json"
+        manifest = _safe_read_json(manifest_path)
+        for label, sample in manifest.get("samples", {}).items():
+            if label in examples or sample.get("split") != "test":
+                continue
+            candidate = ASSETS_DIR / "demo_audio" / str(sample.get("file", ""))
+            if candidate.is_file():
+                examples[label] = candidate
+    return examples
+
+
+def predict_audio(audio_source: Any, bundle: ModelBundle | None = None) -> dict[str, Any]:
+    """Run the same local preprocessing and saved-model inference for uploads and demos."""
+    if isinstance(audio_source, Path):
+        source_path = audio_source
+        source_name = source_path.name
+        if source_path.suffix.lower() not in {".wav", ".flac"}:
+            raise ValueError("Supported audio formats are WAV and FLAC.")
+        audio_bytes = source_path.read_bytes()
+    else:
+        source_name = str(getattr(audio_source, "name", "uploaded.wav"))
+        if hasattr(audio_source, "getvalue"):
+            audio_bytes = bytes(audio_source.getvalue())
+        else:
+            audio_bytes = bytes(audio_source.getbuffer())
+        suffix = Path(source_name).suffix.lower()
+        if suffix not in {".wav", ".flac"}:
+            raise ValueError("Supported audio formats are WAV and FLAC.")
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temporary_audio:
+            temporary_audio.write(audio_bytes)
+            source_path = Path(temporary_audio.name)
+
+    try:
+        clip = standardize_clip(source_path)
+    finally:
+        if not isinstance(audio_source, Path):
+            try:
+                os.remove(source_path)
+            except OSError:
+                pass
+
+    features = extract_features(clip)
+    if not np.isfinite(clip).all() or not all(np.isfinite(value) for value in features.values()):
+        raise ValueError("Audio preprocessing produced a non-finite value.")
+
+    if bundle is None:
+        results = load_results()
+        bundle = _build_bundle(results["best_svm"], results["selected_features"], "SVM")
+    if bundle is None:
+        raise FileNotFoundError("The saved default SVM model configuration is unavailable.")
+    if not bundle.model_path.is_file() or not bundle.scaler_path.is_file():
+        raise FileNotFoundError("A saved model or scaler artifact is missing.")
+    missing_columns = set(bundle.feature_names).difference(features)
+    if missing_columns:
+        raise ValueError(f"Expected model features are missing: {sorted(missing_columns)}")
+
+    feature_row = np.asarray([[features[name] for name in bundle.feature_names]], dtype=float)
+    if feature_row.shape != (1, bundle.feature_count) or not np.isfinite(feature_row).all():
+        raise ValueError("Selected feature row has an invalid shape or non-finite values.")
+    model = _load_model(str(bundle.model_path))
+    scaler = _load_scaler(str(bundle.scaler_path))
+    scaled_row = scaler.transform(feature_row)
+    if not np.isfinite(scaled_row).all():
+        raise ValueError("Scaler produced a non-finite feature value.")
+    prediction_values = np.asarray(model.predict(scaled_row)).reshape(-1)
+    if prediction_values.size != 1 or int(prediction_values[0]) not in {0, 1}:
+        raise ValueError("The saved model did not return a binary prediction.")
+
+    return {
+        "source_name": source_name,
+        "source_sha256": hashlib.sha256(audio_bytes).hexdigest(),
+        "clip": clip,
+        "features": features,
+        "feature_names": bundle.feature_names,
+        "feature_count": bundle.feature_count,
+        "model_name": bundle.label,
+        "model_path": str(bundle.model_path),
+        "prediction": int(prediction_values[0]),
+    }
+
+
+def analysis_detail_data(result: dict[str, Any]) -> tuple[pd.DataFrame, np.ndarray, pd.DataFrame]:
+    """Prepare waveform, spectrogram, and feature table for the collapsed details panel."""
+    clip = np.asarray(result["clip"], dtype=float)
+    waveform = pd.DataFrame({"Amplitude": clip[::80]})
+    spectrum = librosa.amplitude_to_db(np.abs(librosa.stft(clip)), ref=np.max)
+    feature_table = pd.DataFrame(
+        {
+            "Feature": result["feature_names"],
+            "Value": [result["features"][name] for name in result["feature_names"]],
+        }
+    )
+    if waveform.empty or spectrum.size == 0 or feature_table.empty:
+        raise ValueError("Audio analysis details could not be prepared.")
+    if not np.isfinite(waveform.to_numpy()).all() or not np.isfinite(spectrum).all():
+        raise ValueError("Audio analysis details contain non-finite values.")
+    return waveform, spectrum, feature_table
 
 
 def _hero() -> None:
@@ -456,11 +603,10 @@ def _hero() -> None:
   <span class="qk-bird qk-bird-one" aria-hidden="true"></span>
   <div class="qk-drone" aria-hidden="true"><span class="qk-prop qk-prop-left"></span><span class="qk-prop qk-prop-right"></span><span class="qk-drone-body"></span><span class="qk-drone-beam"></span></div>
   <div class="qk-hero-content">
-    <div class="qk-kicker">Audio-Based Drone Detection</div>
+        <div class="qk-kicker">Audio-Based Drone Detection</div>
     <h1 class="qk-hero-title">QubitSky</h1>
-    <div class="qk-kicker">Listen Beyond the Noise.</div>
-    <p class="qk-hero-copy">Upload an outdoor audio recording and QubitSky will analyze its acoustic features to determine whether a drone is present.</p>
-    <a class="qk-hero-cta" href="#audio-upload">Upload Audio</a>
+        <div class="qk-kicker">LISTEN BEYOND THE NOISE.</div>
+        <p class="qk-hero-copy">Upload an environmental audio recording and QubitSky analyzes its acoustic characteristics to determine whether a drone may be present.</p>
   </div>
 </section>
         """,
@@ -468,26 +614,18 @@ def _hero() -> None:
     )
 
 
+def _navigate_to_research() -> None:
+    st.session_state["main_navigation"] = "RESEARCH"
+
+
 def page_detect(data: dict[str, Any]) -> None:
     _hero()
-    st.markdown('<div id="audio-upload"></div>', unsafe_allow_html=True)
-    st.subheader("Upload Audio")
-    uploaded = st.file_uploader(
-        "Choose an audio recording",
-        type=["wav", "flac", "ogg", "mp3", "m4a", "aiff", "aif"],
-        accept_multiple_files=False,
-        label_visibility="collapsed",
-        key="audio_upload",
-    )
-    st.session_state["audio_uploaded"] = uploaded is not None
-    if uploaded is None:
-        st.caption("Supported formats: WAV, FLAC, OGG, MP3, M4A, AIFF")
-        with st.expander("How does this work?"):
-            st.write("Audio → Acoustic Features → ML / Quantum Model → Drone or No Drone")
-            st.write("The quantum model encodes four selected acoustic features into four qubits and compares their quantum-state similarity.")
-        return
+    hero_action, hero_research = st.columns([1, 1], gap="small")
+    with hero_action:
+        st.markdown('<a class="qk-hero-cta" href="#audio-upload">ANALYZE AUDIO</a>', unsafe_allow_html=True)
+    with hero_research:
+        st.button("VIEW RESEARCH", on_click=_navigate_to_research, key="hero-view-research")
 
-    st.audio(uploaded)
     model_options = {
         "Classical SVM": _build_bundle(data["best_svm"], data["selected_features"], "SVM"),
         "Small MLP": _build_bundle(data["best_mlp"], data["selected_features"], "MLP"),
@@ -497,65 +635,91 @@ def page_detect(data: dict[str, Any]) -> None:
         st.error("The saved local detection models could not be loaded.")
         return
     default_model = "Classical SVM" if "Classical SVM" in available else next(iter(available))
-    with st.expander("Advanced model selection"):
-        st.caption("Choose an existing local classical model; quantum models are compared on the Research page.")
-        model_name = st.selectbox(
-            "Detection model",
-            options=list(available),
-            index=list(available).index(default_model),
+
+    with st.container(key="detect-card"):
+        st.subheader("UPLOAD AUDIO")
+        input_mode = st.radio(
+            "Audio source",
+            ["Upload your own audio", "Try a Demo"],
+            horizontal=True,
             label_visibility="collapsed",
+            key="audio_source_mode",
         )
-    bundle = available[model_name]
-    upload_key = hashlib.sha256(uploaded.getvalue()).hexdigest()
-
-    if st.button("ANALYZE AUDIO", type="primary", width="stretch"):
-        try:
-            with st.spinner("Analyzing recording…"):
-                clip, features = _extract_audio_bundle(uploaded, Path(uploaded.name).suffix.lower() or ".wav")
-                feature_frame = pd.DataFrame(
-                    [[features[name] for name in bundle.feature_names]],
-                    columns=bundle.feature_names,
-                )
-                model = _load_model(str(bundle.model_path))
-                scaler = _load_scaler(str(bundle.scaler_path))
-                scaled_features = scaler.transform(feature_frame.to_numpy(dtype=float))
-                prediction = int(model.predict(scaled_features)[0])
-                st.session_state["analysis_result"] = {
-                    "upload_key": upload_key,
-                    "model_name": bundle.label,
-                    "prediction": prediction,
-                    "clip": clip,
-                    "features": features,
-                    "feature_names": bundle.feature_names,
-                    "feature_count": bundle.feature_count,
-                    "model_path": str(bundle.model_path),
-                }
-        except Exception as exc:
-            st.error(f"Audio analysis failed: {exc}")
-
-    result = st.session_state.get("analysis_result", {})
-    if result.get("upload_key") == upload_key and result.get("model_name") == bundle.label:
-        is_drone = result["prediction"] == 1
-        result_text = "DRONE DETECTED" if is_drone else "NO DRONE DETECTED"
-        result_class = "drone" if is_drone else ""
-        st.markdown(
-            f"<div class='qk-result {result_class}'><div class='qk-muted'>Prediction</div><div class='qk-result-title'>{result_text}</div><div class='qk-muted'>Model: {result['model_name']}</div></div>",
-            unsafe_allow_html=True,
-        )
-        with st.expander("View analysis details"):
-            clip = result["clip"]
-            st.markdown("**Waveform**")
-            st.line_chart(pd.DataFrame({"Amplitude": clip[::80]}), height=180)
-            st.markdown("**Spectrogram**")
-            spectrum = librosa.amplitude_to_db(np.abs(librosa.stft(clip)), ref=np.max)
-            fig = px.imshow(spectrum, origin="lower", aspect="auto", color_continuous_scale="Tealgrn")
-            fig.update_layout(height=300, margin=dict(l=8, r=8, t=10, b=8))
-            st.plotly_chart(fig, width="stretch")
-            feature_table = pd.DataFrame(
-                {"Feature": result["feature_names"], "Value": [result["features"][name] for name in result["feature_names"]]}
+        demos = demo_audio_samples()
+        audio_source: Any | None = None
+        is_demo = False
+        if input_mode == "Upload your own audio":
+            uploaded = st.file_uploader(
+                "Choose a WAV or FLAC recording",
+                type=["wav", "flac"],
+                accept_multiple_files=False,
+                key="audio_upload",
+                help="WAV and FLAC are enabled. MP3 decoding is unavailable in this environment.",
             )
-            st.dataframe(feature_table, width="stretch", hide_index=True)
-            st.caption(f"Local {result['model_name']} · {result['feature_count']} selected features · {Path(result['model_path']).name}")
+            audio_source = uploaded
+            if uploaded is None:
+                st.caption("Supported formats: WAV, FLAC")
+        elif demos:
+            demo_label = st.selectbox("Demo example", options=list(demos), key="demo_audio_choice")
+            audio_source = demos[demo_label]
+            is_demo = True
+            st.caption("Demo example only. Its prediction is not new scientific evaluation evidence.")
+        else:
+            st.info("No split-verified local demo audio is available. Upload a WAV or FLAC recording instead.")
+
+        if audio_source is not None:
+            suffix = audio_source.suffix.lower() if isinstance(audio_source, Path) else Path(audio_source.name).suffix.lower()
+            audio_bytes = audio_source.read_bytes() if isinstance(audio_source, Path) else bytes(audio_source.getvalue())
+            st.audio(audio_bytes, format="audio/flac" if suffix == ".flac" else "audio/wav")
+
+            with st.expander("Advanced model selection"):
+                st.caption("Choose a saved local model. Quantum models are compared on the Research page.")
+                model_name = st.selectbox(
+                    "Detection model",
+                    options=list(available),
+                    index=list(available).index(default_model),
+                    label_visibility="collapsed",
+                    key="advanced_detection_model",
+                )
+            bundle = available[model_name]
+            source_hash = hashlib.sha256(audio_bytes).hexdigest()
+            if st.button("ANALYZE AUDIO", type="primary", width="stretch", key="analyze-audio"):
+                try:
+                    with st.spinner("Analyzing recording…"):
+                        result = predict_audio(audio_source, bundle)
+                        result["demo_example"] = is_demo
+                        st.session_state["analysis_result"] = result
+                except Exception as exc:
+                    st.error(f"Audio analysis failed: {exc}")
+
+            result = st.session_state.get("analysis_result", {})
+            if result.get("source_sha256") == source_hash and result.get("model_name") == bundle.label:
+                detected = result["prediction"] == 1
+                result_text = "DRONE DETECTED" if detected else "NO DRONE DETECTED"
+                result_class = "drone" if detected else "no-drone"
+                st.markdown(
+                    f"<div class='qk-result {result_class}'><div class='qk-kicker'>Prediction</div><div class='qk-result-title'>{result_text}</div><div>Model: {result['model_name']}</div></div>",
+                    unsafe_allow_html=True,
+                )
+                if result.get("demo_example"):
+                    st.caption("Demo example; this output is not a new evaluation result.")
+                with st.expander("View analysis details"):
+                    waveform, spectrum, feature_table = analysis_detail_data(result)
+                    st.markdown("**Waveform**")
+                    st.line_chart(waveform, height=180)
+                    st.markdown("**Spectrogram**")
+                    fig = px.imshow(
+                        spectrum,
+                        origin="lower",
+                        aspect="auto",
+                        color_continuous_scale=[[0, "#102b61"], [0.45, "#27c4df"], [0.76, "#7860d8"], [1, "#e9a347"]],
+                    )
+                    fig.update_layout(height=300, margin=dict(l=8, r=8, t=10, b=8))
+                    st.plotly_chart(fig, width="stretch")
+                    st.dataframe(feature_table, width="stretch", hide_index=True)
+                    st.caption(f"Local {result['model_name']} · {result['feature_count']} selected features · {Path(result['model_path']).name}")
+
+        st.session_state["audio_uploaded"] = audio_source is not None
 
     with st.expander("How does this work?"):
         st.write("Audio → Acoustic Features → ML / Quantum Model → Drone or No Drone")
@@ -583,6 +747,122 @@ def _matched_model_results(data: dict[str, Any]) -> pd.DataFrame:
     return matched[matched["Model"].notna()]
 
 
+def _validated_qpu_result(data: dict[str, Any]) -> dict[str, Any] | None:
+    """Return a completed result only when local ledger caches cover all circuits exactly."""
+    result_frame = data.get("qpu_results", pd.DataFrame())
+    ledger = data.get("qpu_jobs", {})
+    if result_frame.empty or not isinstance(ledger, dict):
+        return None
+    completed = result_frame[result_frame.get("status", pd.Series(dtype=str)).astype(str).str.lower().eq("completed")]
+    if completed.empty:
+        return None
+    required_metrics = ("accuracy", "f1", "balanced_accuracy", "drone_recall", "non_drone_recall")
+    result = completed.iloc[-1].to_dict()
+    if any(metric not in result or not np.isfinite(float(result[metric])) for metric in required_metrics):
+        return None
+    if (
+        result.get("backend_name") != "ibm_pittsburgh"
+        or int(result.get("shots", 0)) != 1024
+        or int(result.get("circuit_count", 0)) != 4548
+        or int(result.get("job_count", 0)) != 4
+    ):
+        return None
+
+    jobs = ledger.get("jobs", [])
+    if not isinstance(jobs, list) or len(jobs) != 4:
+        return None
+    covered: list[int] = []
+    job_ids: list[str] = []
+    for batch_index, job in enumerate(jobs):
+        expected_start = batch_index * 1137
+        expected_end = min(expected_start + 1137, 4548)
+        if (
+            job.get("status") != "completed"
+            or job.get("backend") != "ibm_pittsburgh"
+            or job.get("physical_layout") != [87, 97, 107, 108]
+            or int(job.get("shots", 0)) != 1024
+            or int(job.get("circuit_index_start", -1)) != expected_start
+            or int(job.get("circuit_index_end_exclusive", -1)) != expected_end
+        ):
+            return None
+        cache_value = job.get("result_cache")
+        if not cache_value:
+            return None
+        cache_path = Path(cache_value)
+        if not cache_path.is_absolute():
+            cache_path = PROJECT_ROOT / cache_path
+        if not cache_path.is_file():
+            cache_path = QUANTUM_DIR / "qpu_job_cache" / Path(cache_value).name
+        if not cache_path.is_file():
+            return None
+        try:
+            cache = _safe_read_json(cache_path)
+        except (OSError, json.JSONDecodeError):
+            return None
+        expected_indices = list(range(expected_start, expected_end))
+        counts = cache.get("counts", [])
+        pairs = cache.get("pairs", [])
+        pair_keys = [
+            (pair.get("split"), pair.get("left_index"), pair.get("right_index"))
+            for pair in pairs
+            if isinstance(pair, dict)
+        ]
+        if (
+            cache.get("job_id") != job.get("job_id")
+            or cache.get("backend") != "ibm_pittsburgh"
+            or cache.get("physical_layout") != [87, 97, 107, 108]
+            or int(cache.get("shots", 0)) != 1024
+            or cache.get("circuit_index_start") != expected_start
+            or cache.get("circuit_index_end_exclusive") != expected_end
+            or cache.get("circuit_indices") != expected_indices
+            or len(pairs) != len(expected_indices)
+            or len(pair_keys) != len(pairs)
+            or len(set(pair_keys)) != len(pair_keys)
+            or len(counts) != len(expected_indices)
+            or any(not isinstance(count_map, dict) or sum(count_map.values()) != 1024 for count_map in counts)
+        ):
+            return None
+        job_ids.append(str(job.get("job_id")))
+        covered.extend(cache["circuit_indices"])
+    try:
+        result_job_ids = json.loads(str(result.get("job_ids", "[]")))
+    except json.JSONDecodeError:
+        return None
+    if covered != list(range(4548)) or result_job_ids != job_ids:
+        return None
+    return result
+
+
+def _final_comparison_rows(data: dict[str, Any], qpu_result: dict[str, Any] | None) -> pd.DataFrame:
+    display_names = {
+        "RBF SVM": "SVM",
+        "Small MLP": "MLP",
+        "Ideal quantum simulator": "Ideal trainable QSVC",
+        "Finite-shot zero-noise simulator": "Finite-shot ideal simulator",
+        "Stage 6 noisy simulator (2% synthetic)": "Stage 6 noisy simulator (2%)",
+        "Backend-derived noisy simulator": "Backend-derived Aer",
+    }
+    final_rows = data.get("final", pd.DataFrame())
+    rows: list[dict[str, Any]] = []
+    if not final_rows.empty and {"model", "status", "f1"}.issubset(final_rows.columns):
+        for record in final_rows.to_dict(orient="records"):
+            model_name = display_names.get(str(record.get("model")))
+            if model_name is None or str(record.get("status", "")).lower() != "measured":
+                continue
+            if not pd.notna(record.get("f1")):
+                continue
+            rows.append({"Model": model_name, **record})
+    else:
+        matched = _matched_model_results(data)
+        names = {"rbf_svm": "SVM", "small_mlp": "MLP", "fixed_qsvc": "Fixed QSVC", "trainable_qsvc": "Ideal trainable QSVC"}
+        for record in matched.to_dict(orient="records"):
+            rows.append({"Model": names.get(str(record.get("model")), str(record.get("model"))), **record})
+
+    if qpu_result is not None:
+        rows.append({"Model": "Real QPU", **qpu_result})
+    return pd.DataFrame(rows)
+
+
 def page_research(data: dict[str, Any]) -> None:
     st.title("THE RESEARCH BEHIND QUBITSKY")
     st.write(
@@ -590,22 +870,22 @@ def page_research(data: dict[str, Any]) -> None:
     )
 
     matched = _matched_model_results(data)
-    qpu_results = data.get("qpu_results", pd.DataFrame())
-    qpu_final = pd.DataFrame()
-    if not qpu_results.empty and {"status", "f1"}.issubset(qpu_results.columns):
-        qpu_final = qpu_results[
-            qpu_results["status"].astype(str).str.lower().eq("measured")
-            & qpu_results["f1"].notna()
-        ].copy()
+    qpu_result = _validated_qpu_result(data)
+    comparison_rows = _final_comparison_rows(data, qpu_result)
 
     st.subheader("F1 Score by Model")
-    chart_rows = matched[["Model", "f1"]].rename(columns={"f1": "F1"}) if not matched.empty else pd.DataFrame()
-    if not qpu_final.empty:
-        qpu_row = qpu_final.iloc[-1]
-        chart_rows = pd.concat(
-            [chart_rows, pd.DataFrame([{"Model": "Real QPU", "F1": qpu_row["f1"]}])],
-            ignore_index=True,
-        )
+    chart_names = {
+        "SVM": "SVM",
+        "MLP": "MLP",
+        "Ideal trainable QSVC": "Ideal Quantum",
+        "Stage 6 noisy simulator (2%)": "Noisy Quantum",
+        "Real QPU": "Real QPU",
+    }
+    chart_rows = comparison_rows[comparison_rows["Model"].isin(chart_names)].copy() if not comparison_rows.empty else pd.DataFrame()
+    if not chart_rows.empty:
+        chart_rows["Model"] = chart_rows["Model"].map(chart_names)
+        chart_rows = chart_rows.drop_duplicates("Model", keep="last")
+    chart_rows = chart_rows[["Model", "f1"]].rename(columns={"f1": "F1"}) if not chart_rows.empty else pd.DataFrame()
     if chart_rows.empty:
         st.info("No matched comparison results are available yet.")
     else:
@@ -615,51 +895,63 @@ def page_research(data: dict[str, Any]) -> None:
             y="F1",
             color="Model",
             text_auto=".3f",
-            color_discrete_sequence=["#176b70", "#df7834", "#557a46", "#397b9a", "#9c554b"],
+            color_discrete_map={
+                "SVM": "#2877d4",
+                "MLP": "#119b91",
+                "Ideal Quantum": "#7657d6",
+                "Noisy Quantum": "#a18af0",
+                "Real QPU": "#38c9e8",
+            },
         )
         fig.update_layout(height=360, margin=dict(l=8, r=8, t=16, b=8), showlegend=False, yaxis_range=[0, 1])
         st.plotly_chart(fig, width="stretch")
 
-    if not matched.empty:
-        comparison = matched[["Model", "f1", "balanced_accuracy", "drone_recall"]].rename(
-            columns={
-                "f1": "F1",
-                "balanced_accuracy": "Balanced accuracy",
-                "drone_recall": "Drone recall",
-            }
-        )
-        if not qpu_final.empty:
-            qpu_row = qpu_final.iloc[-1]
-            comparison.loc[len(comparison)] = [
-                "Real QPU",
-                qpu_row.get("f1"),
-                qpu_row.get("balanced_accuracy"),
-                qpu_row.get("drone_recall"),
-            ]
-        st.dataframe(comparison, width="stretch", hide_index=True, column_config={
-            "F1": st.column_config.NumberColumn(format="%.3f"),
-            "Balanced accuracy": st.column_config.NumberColumn(format="%.3f"),
-            "Drone recall": st.column_config.NumberColumn(format="%.3f"),
-        })
+    if not comparison_rows.empty:
+        with st.expander("All comparison metrics"):
+            comparison = comparison_rows[["Model", "accuracy", "precision", "recall", "f1", "balanced_accuracy", "drone_recall", "non_drone_recall"]].rename(
+                columns={
+                    "accuracy": "Accuracy",
+                    "precision": "Precision",
+                    "recall": "Recall",
+                    "f1": "F1",
+                    "balanced_accuracy": "Balanced accuracy",
+                    "drone_recall": "Drone recall",
+                    "non_drone_recall": "Non-drone recall",
+                }
+            )
+            st.dataframe(comparison, width="stretch", hide_index=True, column_config={
+                "Accuracy": st.column_config.NumberColumn(format="%.3f"),
+                "Precision": st.column_config.NumberColumn(format="%.3f"),
+                "Recall": st.column_config.NumberColumn(format="%.3f"),
+                "F1": st.column_config.NumberColumn(format="%.3f"),
+                "Balanced accuracy": st.column_config.NumberColumn(format="%.3f"),
+                "Drone recall": st.column_config.NumberColumn(format="%.3f"),
+                "Non-drone recall": st.column_config.NumberColumn(format="%.3f"),
+            })
         st.caption("Matched held-out test set: four selected features and 24 training recordings. Scores are experiment results, not a claim of quantum advantage.")
 
-    st.subheader("Real IBM Quantum Hardware")
     ledger = data.get("qpu_jobs", {}) if isinstance(data.get("qpu_jobs"), dict) else {}
     jobs = ledger.get("jobs", []) if isinstance(ledger.get("jobs", []), list) else []
     completed = sum(str(job.get("status", "")).lower() == "completed" for job in jobs)
-    circuit_count = int(ledger.get("total_circuits", 0) or 0)
-    per_job = int(ledger.get("circuits_per_job_target", 1) or 1)
-    planned = (circuit_count + per_job - 1) // per_job if per_job else 0
-    if not qpu_final.empty:
-        qpu_row = qpu_final.iloc[-1]
-        st.markdown("**REAL QPU RESULT**")
-        q1, q2, q3 = st.columns(3)
-        q1.metric("F1", f"{float(qpu_row['f1']):.3f}")
-        q2.metric("Balanced accuracy", f"{float(qpu_row['balanced_accuracy']):.3f}")
-        q3.metric("Drone recall", f"{float(qpu_row['drone_recall']):.3f}")
+    planned = 4
+    batch4 = next((job for job in jobs if int(job.get("circuit_index_start", -1)) == 3411), None)
+    batch4_state = str(batch4.get("status", "not submitted")).replace("_", " ").title() if batch4 else "Not submitted"
+    if batch4_state == "Submitted":
+        batch4_state = "Queued / Running"
+    st.markdown("### REAL IBM QPU EXPERIMENT")
+    if qpu_result is not None:
+        st.markdown("**REAL IBM QPU EXPERIMENT COMPLETED**")
+        st.caption(f"Backend: {qpu_result['backend_name']} · 4 qubits · {int(qpu_result['shots'])} shots")
+        q1, q2 = st.columns(2)
+        q1.metric("F1", f"{float(qpu_result['f1']):.3f}")
+        q2.metric("Accuracy", f"{float(qpu_result['accuracy']):.3f}")
+        q3, q4 = st.columns(2)
+        q3.metric("Balanced accuracy", f"{float(qpu_result['balanced_accuracy']):.3f}")
+        q4.metric("Drone recall", f"{float(qpu_result['drone_recall']):.3f}")
+        st.caption(f"Non-drone recall: {float(qpu_result['non_drone_recall']):.3f}")
     else:
         st.markdown(
-            f"<div class='qk-card'><strong>Experiment in progress</strong><br>Backend: {ledger.get('backend', 'ibm_pittsburgh')}<br>{completed} / {planned} hardware batches completed</div>",
+            f"<div class='qk-card'><strong>{completed} / {planned} batches completed</strong><br>Backend: {ledger.get('backend', 'ibm_pittsburgh')} · 4 qubits<br>Batch 4: {batch4_state}</div>",
             unsafe_allow_html=True,
         )
 
@@ -675,7 +967,7 @@ def page_research(data: dict[str, Any]) -> None:
                 color="noise_type",
                 markers=True,
                 labels={"error_level": "Simulated noise level", "f1": "F1 score", "noise_type": "Noise setting"},
-                color_discrete_sequence=["#df7834", "#176b70", "#557a46"],
+                color_discrete_sequence=["#38c9e8", "#7657d6", "#119b91"],
             )
             fig.update_layout(height=330, margin=dict(l=8, r=8, t=12, b=8), yaxis_range=[0, 1])
             st.plotly_chart(fig, width="stretch")
@@ -725,12 +1017,12 @@ def page_about(data: dict[str, Any]) -> None:
     st.title("ABOUT QUBITSKY")
     st.subheader("WHAT IS QUBITSKY?")
     st.write("QubitSky is an acoustic drone-detection research prototype.")
-    st.subheader("WHY SOUND?")
-    st.write("Microphones can help detect drones even when cameras have limited visibility.")
-    st.subheader("WHAT MAKES THE PROBLEM HARD?")
-    st.write("Birds, wind, aircraft, engines, helicopters and insects can sound similar or interfere with detection.")
+    st.subheader("HOW DOES IT WORK?")
+    st.write("A microphone captures environmental audio. The system extracts acoustic features and predicts Drone or No Drone.")
+    st.write("Birds, wind, helicopters, aircraft, engines and insects can sound similar or interfere with detection.")
     st.subheader("WHERE DOES QUANTUM FIT?")
-    st.write("QubitSky compares classical machine learning with quantum-kernel classification for small-data and noisy environments.")
+    st.write("QubitSky compares conventional models with a four-qubit quantum-kernel model, including execution on a real IBM quantum processor, under limited-data and noisy conditions.")
+    st.warning("Research prototype — not a safety-critical anti-drone system.")
 
 
 def main() -> None:

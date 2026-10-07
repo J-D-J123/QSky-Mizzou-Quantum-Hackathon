@@ -1,0 +1,18 @@
+{
+  "samples": {
+    "Drone Sample": {
+      "file": "drone_sample.flac",
+      "recording_id": "5095e44dec1a69b7124e",
+      "split": "test",
+      "source_class": "drone",
+      "purpose": "frontend demonstration only; not new evaluation evidence"
+    },
+    "Environmental / No-Drone Sample": {
+      "file": "environment_sample.flac",
+      "recording_id": "3ae102c1d9aef07b81ae",
+      "split": "test",
+      "source_class": "background",
+      "purpose": "frontend demonstration only; not new evaluation evidence"
+    }
+  }
+}
