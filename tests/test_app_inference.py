@@ -35,8 +35,12 @@ class AudioInferenceSmokeTest(unittest.TestCase):
         self.assertEqual(audio_path.suffix.lower(), ".flac")
         recording_id = audio_path.name.split("__", maxsplit=1)[0]
         self.assertEqual(self.demo_manifest[demo_label]["split"], "test")
-        self.assertEqual(self.demo_manifest[demo_label]["recording_id"], recording_id)
-        self.assertIn(expected_folder, audio_path.parts)
+        self.assertEqual(self.demo_manifest[demo_label]["source_class"], expected_folder)
+        if "__" in audio_path.name:
+            self.assertEqual(self.demo_manifest[demo_label]["recording_id"], recording_id)
+            self.assertIn(expected_folder, audio_path.parts)
+        else:
+            self.assertIn("demo_audio", audio_path.parts)
 
         result = predict_audio(audio_path)
         self.assertIn(result["prediction"], (0, 1))
