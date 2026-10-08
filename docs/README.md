@@ -1,4 +1,8 @@
-# Classical approach report
+# Classical approach documents
+
+Two documents describe the same classical baselines for two audiences.
+
+## Technical report
 
 `classical_approach.tex` is the editable LaTeX source;
 `classical_approach.pdf` is the compiled report. It describes Models A–D,
@@ -20,4 +24,24 @@ pdflatex -interaction=nonstopmode -halt-on-error classical_approach.tex
 ```
 
 Two passes resolve references. No external images, bibliography database, model
-artifacts, or training runs are required to build the PDF.
+artifacts, or training runs are required to build either PDF.
+
+## Beginner paper
+
+`classical_approach_beginner.tex` compiles to `classical_approach_beginner.pdf`,
+*Can a Computer Hear a Drone?* It covers the same problem and Models A–D for a reader
+with no machine-learning background, in research-paper form: problem statement,
+research questions, background vocabulary, data design, one section per model
+(how it decides, why it is in the comparison, where it may fail), experimental
+design, evaluation with a worked example, threats to validity, and a glossary.
+Each idea is introduced in an "In everyday language" paragraph before its equation.
+
+Its worked numbers are labelled as instructional; it reports no training results
+either. It describes the current workspace, including the matched selected-feature
+protocol, and records those file fingerprints in
+`classical_approach_beginner_sources.json`. Build it the same way:
+
+```bash
+pdflatex -interaction=nonstopmode -halt-on-error classical_approach_beginner.tex
+pdflatex -interaction=nonstopmode -halt-on-error classical_approach_beginner.tex
+```

@@ -422,10 +422,15 @@ def import_assets(root, output, *, feature_counts=(4,), train_sizes=(24,), expec
         for s in samples:
             if s["snr_db"] == "clean":
                 sample_ids.setdefault(s["recording_id"], set()).add(s["sample_id"])
-        expected_ids = {"training": subsets[24], "validation": val_ids, "test": test_ids}
+        expected_ids = {"training_recordings": subsets[24], "validation_recordings": val_ids,
+                        "test_recordings": test_ids}
         agree = True
         for part, ids in expected_ids.items():
-            listed = {r["recording_id"]: set(r["sample_ids"]) for r in manifest.get(part, [])}
+            records = manifest.get(part, [])
+            if isinstance(records, dict):
+                # Her test recordings are listed once per SNR condition.
+                records = records.get("clean", [])
+            listed = {r["recording_id"]: set(r["sample_ids"]) for r in records}
             agree &= sorted(listed) == ids and all(listed[i] == sample_ids.get(i) for i in listed)
         checks["stage5_manifest_ids_and_sample_ids_match"] = bool(agree)
         if not agree:
@@ -452,8 +457,10 @@ def import_assets(root, output, *, feature_counts=(4,), train_sizes=(24,), expec
         checks["audio_feature_check"] = verify_clean_audio(samples, verify_audio, feature_tolerance, errors)
     premixed = {}
     if materialize_noisy and audio["model_d_ready"]:
-        premixed = write_premixed(root, audio_root, output, samples, used["test"], feature_tolerance, errors)
+        premixed, other_segment = write_premixed(root, audio_root, output, samples, used["test"],
+                                                 feature_tolerance, errors)
         checks["premixed_test_conditions"] = {snr: len(rows) for snr, rows in premixed.items()}
+        checks["premixed_rows_mixed_with_another_segment_of_the_recorded_donor"] = other_segment
     elif materialize_noisy:
         errors.append("--materialize-noisy needs the processed clean audio, which is missing")
 
@@ -541,18 +548,45 @@ def write_premixed(root, audio_root, output, samples, test_ids, tolerance, error
     import librosa
     import soundfile as sf
     clean = {s["sample_id"]: s for s in samples if s["snr_db"] == "clean"}
-    written = {}
+    # Her mixer caches one segment per donor recording, so noise_source_file_path often names
+    # a different segment than the one mixed in. Every clean segment of the recorded donor
+    # recording is tried; a mixture is kept only if it reproduces the feature row.
+    segments, actual, audio = {}, {}, {}
+    for s in clean.values():
+        segments.setdefault((s["split"], s["recording_id"]), []).append(s["file_path"])
+
+    def donor_audio(value):
+        if value not in audio:
+            path = resolve_audio(root, audio_root, value)
+            audio[value] = None if path is None else load_audio(path)
+        return audio[value]
+
+    written, other_segment = {}, 0
     for s in samples:
         if s["split"] != "test" or s["snr_db"] == "clean" or s["recording_id"] not in test_ids:
             continue
         target = clean.get(s.get("clean_sample_id"))
-        donor = resolve_audio(root, audio_root, s["noise_source_file_path"])
-        if target is None or not target["audio_path"] or donor is None:
+        donor = (s["split"], s["noise_recording_id"])
+        candidates = [c for c in dict.fromkeys([actual.get(donor), s["noise_source_file_path"],
+                                                *segments.get(donor, [])]) if donor_audio(c) is not None]
+        if target is None or not target["audio_path"] or not candidates:
             errors.append(f"{s['sample_id']}: target or donor audio is missing; cannot regenerate the mixture")
             continue
         signal = load_audio(target["audio_path"])
-        mixed = mix_like_dhanya(signal, librosa.util.fix_length(load_audio(donor), size=len(signal)), float(s["snr_db"]))
-        error = feature_error(mixed, s)
+        mixed, error = None, np.inf
+        for candidate in candidates:
+            try:
+                attempt = mix_like_dhanya(signal, librosa.util.fix_length(donor_audio(candidate), size=len(signal)),
+                                          float(s["snr_db"]))
+            except ValueError:
+                continue  # a silent segment cannot have been the donor
+            attempt_error = feature_error(attempt, s)
+            if attempt_error < error:
+                mixed, error = attempt, attempt_error
+            if error <= tolerance:
+                actual[donor] = candidate
+                other_segment += candidate != s["noise_source_file_path"]
+                break
         if error > tolerance:
             errors.append(f"{s['sample_id']}: the regenerated mixture differs from its feature row by {error:.3g} (relative)")
             continue
@@ -566,7 +600,7 @@ def write_premixed(root, audio_root, output, samples, test_ids, tolerance, error
             writer = csv.writer(handle)
             writer.writerow(["path", "source_path"])
             writer.writerows(rows)
-    return written
+    return written, other_segment
 
 
 def parser():
