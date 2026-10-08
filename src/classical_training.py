@@ -38,6 +38,10 @@ from classical_utils import (
 
 SVM_C_VALUES = (0.1, 1.0, 10.0)
 SVM_GAMMAS = ("scale", "auto")
+# Early stopping may only stop after this many optimizer updates. With 24 training
+# recordings an epoch is 2 updates, so a 15-epoch patience stopped the MLP at
+# epoch 1 before it learned anything (it predicted "no drone" for every recording).
+MLP_MIN_OPTIMIZER_STEPS = 500
 
 
 def fit_model(
@@ -87,7 +91,9 @@ def fit_model(
     best_metrics: dict[str, Any] | None = None
     patience = 15
     stale_epochs = 0
-    max_epochs = 250
+    steps_per_epoch = -(-len(train) // model.batch_size)
+    min_epochs = -(-MLP_MIN_OPTIMIZER_STEPS // steps_per_epoch)
+    max_epochs = max(250, min_epochs + 100)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ConvergenceWarning)
         for epoch in range(max_epochs):
@@ -110,7 +116,7 @@ def fit_model(
                 stale_epochs = 0
             else:
                 stale_epochs += 1
-            if stale_epochs >= patience:
+            if stale_epochs >= patience and epoch + 1 >= min_epochs:
                 break
     if best_weights is None or best_metrics is None:
         raise RuntimeError("MLP training did not produce a validation-selected checkpoint")

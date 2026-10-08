@@ -413,6 +413,10 @@ def _ensure_result_file(rows: list[dict[str, Any]]) -> None:
         prior = pd.read_csv(RESULTS_PATH)
         table = pd.concat([prior, table], ignore_index=True, sort=False)
         key_columns = [
+            # experiment is part of the key: the fixed-kernel noise-robustness rows
+            # share every other column with the matched comparison row and were
+            # overwriting it, which removed Fixed QSVC from the RESEARCH page.
+            "experiment",
             "model",
             "feature_count",
             "training_size_requested",

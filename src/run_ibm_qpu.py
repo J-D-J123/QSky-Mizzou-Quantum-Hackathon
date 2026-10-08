@@ -58,6 +58,66 @@ APPROVED_CALIBRATION_REFERENCE = {
     "selected_median_readout_error": 0.0035400,
 }
 EXCLUDED_BACKENDS = {"ibm_miami"}
+# Seconds between shots; None keeps the backend default.
+REP_DELAY_SECONDS: float | None = None
+INCLUDE_VALIDATION_KERNEL = True
+
+# Per-backend settings selected with --backend. ibm_miami (Nighthawk) allows a
+# 1-4 ms repetition delay (default 4 ms vs 250 us on Heron), so the full workload
+# does not fit a 25-minute allocation; run it at the 1 ms minimum, with fewer shots
+# and without the validation kernel, which the hardware score never uses.
+BACKEND_PROFILES: dict[str, dict[str, Any]] = {
+    "ibm_pittsburgh": {
+        "layout": [87, 97, 107, 108],
+        "calibration_reference": dict(APPROVED_CALIBRATION_REFERENCE),
+        "rep_delay_seconds": None,
+    },
+    "ibm_kingston": {
+        # Heron r2. Lowest-error linear chain on 2026-10-07 (CZ 0.16-0.26%,
+        # readout 0.3-0.6%). Reference = selected-qubit medians from the 18:13 CDT
+        # calibration; the 16:13 one (1Q 0.0001509) changed after batch 1, so the
+        # run restarted in a single calibration window (first batch 1 archived).
+        "layout": [42, 43, 44, 45],
+        "calibration_reference": {
+            "selected_median_1q_gate_error": 0.0003149,
+            "selected_median_2q_gate_error": 0.0016605,
+            "selected_median_readout_error": 0.0043945,
+        },
+        "rep_delay_seconds": None,
+    },
+    "ibm_miami": {
+        # Lowest-error linear chain on 2026-10-07 (CZ 0.18-0.25%, readout 0.6-1.3%).
+        "layout": [44, 54, 64, 74],
+        # Selected-qubit medians from the approved 2026-10-07 calibration snapshot.
+        "calibration_reference": {
+            "selected_median_1q_gate_error": 0.0001746,
+            "selected_median_2q_gate_error": 0.0020672,
+            "selected_median_readout_error": 0.0096436,
+        },
+        "rep_delay_seconds": 0.001,
+    },
+}
+
+
+def _apply_backend_profile(name: str, include_validation_kernel: bool) -> None:
+    global PREFERRED_BACKEND, PREFERRED_LAYOUT, APPROVED_CALIBRATION_REFERENCE
+    global REP_DELAY_SECONDS, INCLUDE_VALIDATION_KERNEL
+    if name not in BACKEND_PROFILES:
+        raise ValueError(f"No backend profile for {name}; known: {sorted(BACKEND_PROFILES)}")
+    profile = BACKEND_PROFILES[name]
+    if profile["calibration_reference"] is None:
+        raise ValueError(f"{name} has no approved calibration reference yet")
+    PREFERRED_BACKEND = name
+    PREFERRED_LAYOUT = list(profile["layout"])
+    APPROVED_CALIBRATION_REFERENCE = dict(profile["calibration_reference"])
+    REP_DELAY_SECONDS = profile["rep_delay_seconds"]
+    INCLUDE_VALIDATION_KERNEL = include_validation_kernel
+
+
+def _expected_circuit_count(sizes: dict[str, int]) -> int:
+    training_pairs = sizes["training"] * (sizes["training"] - 1) // 2
+    validation_pairs = sizes["validation"] * sizes["training"] if INCLUDE_VALIDATION_KERNEL else 0
+    return training_pairs + validation_pairs + sizes["test"] * sizes["training"]
 
 
 class QPUJobFailure(RuntimeError):
@@ -317,9 +377,10 @@ def _kernel_pairs(data: dict[str, Any]) -> tuple[list[tuple[str, int, int, np.nd
     for left_index in range(len(train_x)):
         for right_index in range(left_index + 1, len(train_x)):
             pairs.append(("training", left_index, right_index, train_x[left_index], train_x[right_index]))
-    for left_index, left in enumerate(validation_x):
-        for right_index, right in enumerate(train_x):
-            pairs.append(("validation", left_index, right_index, left, right))
+    if INCLUDE_VALIDATION_KERNEL:
+        for left_index, left in enumerate(validation_x):
+            for right_index, right in enumerate(train_x):
+                pairs.append(("validation", left_index, right_index, left, right))
     for left_index, left in enumerate(test_x):
         for right_index, right in enumerate(train_x):
             pairs.append(("test", left_index, right_index, left, right))
@@ -399,7 +460,13 @@ def _estimated_qpu_seconds(
         return None
     if not math.isfinite(duration_dt) or not math.isfinite(dt_seconds) or duration_dt <= 0 or dt_seconds <= 0:
         return None
-    return duration_dt * dt_seconds * circuit_count * shots
+    # Each shot also waits the repetition delay, which dwarfs a ~4 us circuit
+    # (250 us on Heron, at least 1 ms on Nighthawk). Omitting it made the old
+    # estimate roughly 70x too low and the 25% allocation reserve meaningless.
+    rep_delay = REP_DELAY_SECONDS
+    if rep_delay is None:
+        rep_delay = float(getattr(backend.configuration(), "default_rep_delay", 0.0) or 0.0)
+    return (duration_dt * dt_seconds + rep_delay) * circuit_count * shots
 
 
 def _calibration_snapshot(
@@ -734,9 +801,11 @@ def _write_comparison(
     )
     rows.append(
         {
-            "model": "REAL IBM QPU",
-            "status": "measured" if qpu_row is not None else "not_submitted",
             **(qpu_row or {}),
+            "model": "REAL IBM QPU",
+            # Set after the spread: qpu_row carries status "completed", which
+            # previously overwrote "measured" and dropped the bar from the plot.
+            "status": "measured" if qpu_row is not None else "not_submitted",
         }
     )
     RESULTS_QUANTUM_DIR.mkdir(parents=True, exist_ok=True)
@@ -823,7 +892,7 @@ def _submit_batches(
     if backend.name != PREFERRED_BACKEND or selected_layout != PREFERRED_LAYOUT:
         raise RuntimeError("Submission target differs from the explicitly approved backend/layout")
     pairs, sizes = _kernel_pairs(data)
-    if len(pairs) != 4548:
+    if len(pairs) != _expected_circuit_count(sizes):
         raise RuntimeError(f"Frozen workload changed unexpectedly: {len(pairs)} circuits")
     jobs_data, completed_until = _validated_resume_state(pairs, selected_layout, shots)
     feature_map = _frozen_feature_map(data)
@@ -895,6 +964,8 @@ def _submit_batches(
         JOBS_PATH.parent.mkdir(parents=True, exist_ok=True)
         JOBS_PATH.write_text(json.dumps(jobs_data, indent=2) + "\n", encoding="utf-8")
         sampler = SamplerV2(mode=backend)
+        if REP_DELAY_SECONDS is not None:
+            sampler.options.execution.rep_delay = REP_DELAY_SECONDS
         try:
             job = sampler.run(batch_circuits, shots=shots)
         except Exception as exc:
@@ -1172,14 +1243,17 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--shots", type=int, default=SHOTS)
     parser.add_argument("--skip-noise-preview", action="store_true", help="Skip local backend-calibration-derived Aer preview.")
     parser.add_argument("--credentials", type=Path, default=PROJECT_ROOT / "secrets" / "ibm_quantum.env")
+    parser.add_argument("--backend", default="ibm_pittsburgh", choices=sorted(BACKEND_PROFILES), help="Backend profile (layout, calibration reference, repetition delay).")
+    parser.add_argument("--skip-validation-kernel", action="store_true", help="Omit validation-vs-training circuits; the hardware score uses only training and test kernels.")
     return parser
 
 
 def main() -> int:
     args = build_parser().parse_args()
-    if args.shots not in {512, 1024}:
-        print("Preflight blocked: shots must be 512 or 1024.", file=sys.stderr)
+    if args.shots not in {256, 512, 1024}:
+        print("Preflight blocked: shots must be 256, 512 or 1024.", file=sys.stderr)
         return 2
+    _apply_backend_profile(args.backend, include_validation_kernel=not args.skip_validation_kernel)
     try:
         _load_local_env(args.credentials)
         token = os.environ.get("QISKIT_IBM_TOKEN", "").strip()
@@ -1188,8 +1262,8 @@ def main() -> int:
             print("Preflight blocked: local token and instance CRN must be configured.", file=sys.stderr)
             return 2
         config, data = _load_frozen_data()
-        pairs, _ = _kernel_pairs(data)
-        if len(pairs) != 4548:
+        pairs, sizes = _kernel_pairs(data)
+        if len(pairs) != _expected_circuit_count(sizes):
             raise RuntimeError(f"Frozen workload changed unexpectedly: {len(pairs)} circuits")
         _, completed_until = _validated_resume_state(pairs, PREFERRED_LAYOUT, args.shots)
         remaining_ranges = [

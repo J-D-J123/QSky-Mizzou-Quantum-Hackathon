@@ -8,11 +8,11 @@
       "non_drone_recall": 0.6341463414634146
     },
     "small_mlp": {
-      "accuracy": 0.8367346938775511,
-      "f1": 0.0,
-      "balanced_accuracy": 0.5,
-      "drone_recall": 0.0,
-      "non_drone_recall": 1.0
+      "accuracy": 0.7346938775510204,
+      "f1": 0.4090909090909091,
+      "balanced_accuracy": 0.6653963414634146,
+      "drone_recall": 0.5625,
+      "non_drone_recall": 0.7682926829268293
     },
     "trainable_qsvc": {
       "accuracy": 0.6428571428571429,
@@ -24,7 +24,7 @@
   },
   "quantum_competitive_thresholds": {
     "f1_at_least_mlp": {
-      "threshold_f1": 0.0,
+      "threshold_f1": 0.4090909090909091,
       "status": "still_meets_threshold_at_highest_tested_error",
       "largest_passing_error": 0.02,
       "first_failing_error": null

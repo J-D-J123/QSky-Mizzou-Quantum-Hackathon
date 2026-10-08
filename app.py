@@ -610,7 +610,8 @@ def page_research(data: dict[str, Any]) -> None:
     qpu_final = pd.DataFrame()
     if not qpu_results.empty and {"status", "f1"}.issubset(qpu_results.columns):
         qpu_final = qpu_results[
-            qpu_results["status"].astype(str).str.lower().eq("measured")
+            # run_ibm_qpu.py writes "completed" once all batches are assembled.
+            qpu_results["status"].astype(str).str.lower().isin({"measured", "completed"})
             & qpu_results["f1"].notna()
         ].copy()
 
@@ -673,6 +674,11 @@ def page_research(data: dict[str, Any]) -> None:
         q1.metric("F1", f"{float(qpu_row['f1']):.3f}")
         q2.metric("Balanced accuracy", f"{float(qpu_row['balanced_accuracy']):.3f}")
         q3.metric("Drone recall", f"{float(qpu_row['drone_recall']):.3f}")
+        st.caption(
+            f"Measured on {qpu_row.get('backend_name', 'IBM hardware')}, physical qubits "
+            f"{qpu_row.get('physical_qubits', '')}, {int(qpu_row.get('shots', 0))} shots, "
+            f"{int(qpu_row.get('circuit_count', 0))} circuits in {int(qpu_row.get('job_count', 0))} jobs."
+        )
     else:
         st.markdown(
             f"<div class='qk-card'><strong>Experiment in progress</strong><br>Backend: {ledger.get('backend', 'ibm_pittsburgh')}<br>{completed} / {planned} hardware batches completed</div>",

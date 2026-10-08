@@ -2668,7 +2668,7 @@
     "best_combined_error_meeting_mlp_f1": 0.02,
     "thresholds": {
       "f1_at_least_mlp": {
-        "threshold_f1": 0.0,
+        "threshold_f1": 0.4090909090909091,
         "status": "still_meets_threshold_at_highest_tested_error",
         "largest_passing_error": 0.02,
         "first_failing_error": null

@@ -12,9 +12,26 @@ This branch builds on `dhanya` and fixes three problems found while reproducing 
 2. **Reproducible trainable kernel.** SPSA was unseeded, so the trainable QSVC's test F1 ranged 0.43 to 0.71 across reruns. Stage 5 now runs seeded restarts (`--trainable-restarts`, default 10) and keeps the one with the best validation F1; the test split never influences the choice.
 3. **Correct classical comparators.** `_fit_classical_comparators` labelled every SVM/MLP row as 4 features and 24 recordings, so later grid configurations overwrote the matched rows used by Stage 6 and the RESEARCH page.
 
-The DETECT page now classifies every 1 s window of an upload and takes a majority vote. `run_ibm_qpu.py` also no longer rejects the placeholder job ledger written by a preflight-only run.
+4. **MLP early stopping.** With 24 training recordings an epoch is only 2 optimizer updates, so the 15-epoch patience stopped the MLP at epoch 1 and it predicted "no drone" for every recording (F1 0.000). Early stopping now requires at least 500 updates before it may stop; the best validation checkpoint is still restored.
+5. **Stage 5 results key.** The fixed-QSVC matched row shared its key with the noise-robustness rows and was overwritten; `experiment` is now part of the key.
 
-Results after the fixes (clean test, recording level, same samples for every model; 4 features, 24 recordings): RBF SVM F1 0.492, trainable QSVC 0.444, fixed QSVC 0.308, MLP 0.000. The classical SVM is the strongest model in every grid configuration. With the selected 6-feature models, DETECT recognises 83% of held-out Svanström drones (previously 50% for the SVM and 0% for the MLP).
+The DETECT page now classifies every 1 s window of an upload and takes a majority vote, and resolves model paths inside the checkout.
+
+Results after the fixes (clean test, recording level, same samples for every model; 4 features, 24 recordings): RBF SVM F1 0.492, trainable QSVC 0.444, MLP 0.409, fixed QSVC 0.308. With the selected 6-feature models, DETECT recognises 83% of held-out Svanström drones (previously 50% for the SVM and 0% for the MLP).
+
+### Real IBM hardware (`ibm_kingston`)
+
+The frozen 4-qubit trainable model ran on `ibm_kingston` (Heron r2, physical qubits [42, 43, 44, 45], 512 shots, 4,548 circuits in 4 jobs, one calibration window, about 628 s of QPU time):
+
+| 98 test recordings | Accuracy | F1 | Balanced acc. | ROC-AUC | False alarms |
+|---|---|---|---|---|---|
+| Ideal simulator | 0.643 | 0.444 | 0.736 | 0.833 | 33 / 82 |
+| Aer with Kingston calibration | 0.663 | 0.459 | 0.748 | | 31 / 82 |
+| **Real `ibm_kingston`** | **0.561** | **0.394** | **0.688** | **0.731** | **41 / 82** |
+
+Hardware kernel values correlate about 0.90 with the ideal kernel but are compressed (about 0.83x ideal + 0.05), and 20 of 98 test predictions changed, while the calibration-based noise model predicted no change. Drone recall stayed at 14/16. A first batch 1 measured before an 18:13 recalibration is kept in `results/quantum/qpu_archive/`; it agrees with the rerun at correlation 0.985. Raw counts per job are in `results/quantum/qpu_job_cache/`.
+
+`run_ibm_qpu.py` now takes `--backend` (`ibm_pittsburgh` default, `ibm_kingston`, `ibm_miami`) with per-backend layouts and calibration references, estimates QPU time including the repetition delay (the old estimate was about 70x too low), and offers `--skip-validation-kernel` and 256 shots. Example: `RUN_REAL_QPU=YES python src/run_ibm_qpu.py --backend ibm_kingston --confirm-real-qpu --submit-after-review --shots 512`, run once per batch.
 
 To regenerate everything: place the four datasets in `data/raw/` (see Data below), then run `build_master_metadata.py`, `prepare_dataset.py`, `train_svm.py`, `train_mlp.py`, `quantum_kernel_simulator.py` and `quantum_noise_experiments.py`. Add `--store-noisy-audio` to `prepare_dataset.py` if a model needs the noisy audio itself rather than its features.
 
